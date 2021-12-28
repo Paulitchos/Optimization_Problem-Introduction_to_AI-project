@@ -4,8 +4,8 @@
 #include "algoritmo.h"
 #include "utils.h"
 
-// Preenche uma estrutura com os progenitores da próxima geração, de acordo com o resultados do torneio binario (tamanho de torneio: 2)
-// Parâmetros de entrada: população actual (pop), estrutura com parâmetros (d) e população de pais a encher
+// Preenche uma estrutura com os progenitores da prï¿½xima geraï¿½ï¿½o, de acordo com o resultados do torneio binario (tamanho de torneio: 2)
+// Parï¿½metros de entrada: populaï¿½ï¿½o actual (pop), estrutura com parï¿½metros (d) e populaï¿½ï¿½o de pais a encher
 void tournament(pchrom pop, struct info d, pchrom parents)
 {
 	int i, x1, x2;
@@ -24,18 +24,18 @@ void tournament(pchrom pop, struct info d, pchrom parents)
 	}
 }
 
-// Operadores geneticos a usar na geração dos filhos
-// Parâmetros de entrada: estrutura com os pais (parents), estrutura com parâmetros (d), estrutura que guardará os descendentes (offspring)
+// Operadores geneticos a usar na geraï¿½ï¿½o dos filhos
+// Parï¿½metros de entrada: estrutura com os pais (parents), estrutura com parï¿½metros (d), estrutura que guardarï¿½ os descendentes (offspring)
 void genetic_operators(pchrom parents, struct info d, pchrom offspring)
 {
-    // Recombinação com um ponto de corte
+    // Recombinaï¿½ï¿½o com um ponto de corte
 	crossover(parents, d, offspring);
-	// Mutação binária
+	// Mutaï¿½ï¿½o binï¿½ria
 	mutation(offspring, d);
 }
 
-// Preenche o vector descendentes com o resultado das operações de recombinação
-// Parâmetros de entrada: estrutura com os pais (parents), estrutura com parâmetros (d), estrutura que guardará os descendentes (offspring)
+// Preenche o vector descendentes com o resultado das operaï¿½ï¿½es de recombinaï¿½ï¿½o
+// Parï¿½metros de entrada: estrutura com os pais (parents), estrutura com parï¿½metros (d), estrutura que guardarï¿½ os descendentes (offspring)
 void crossover(pchrom parents, struct info d, pchrom offspring)
 {
 	int i, j, point;
@@ -64,8 +64,8 @@ void crossover(pchrom parents, struct info d, pchrom offspring)
 	}
 }
 
-// Mutação binária com vários pontos de mutação
-// Parâmetros de entrada: estrutura com os descendentes (offspring) e estrutura com parâmetros (d)
+// Mutaï¿½ï¿½o binï¿½ria com vï¿½rios pontos de mutaï¿½ï¿½o
+// Parï¿½metros de entrada: estrutura com os descendentes (offspring) e estrutura com parï¿½metros (d)
 void mutation(pchrom offspring, struct info d)
 {
 	int i, j;
