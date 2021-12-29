@@ -5,15 +5,15 @@
 #include "algoritmo.h"
 #include "utils.h"
 
-// Inicialização do gerador de números aleatórios
+// Inicializaï¿½ï¿½o do gerador de nï¿½meros aleatï¿½rios
 void init_rand()
 {
 	srand((unsigned)time(NULL));
 }
 
-// Leitura dos parâmetros e dos dados do problema
-// Parâmetros de entrada: Nome do ficheiro e matriz a preencher com os dados dos objectos (peso e valor)
-// Parâmetros de saída: Devolve a estrutura com os parâmetros
+// Leitura dos parï¿½metros e dos dados do problema
+// Parï¿½metros de entrada: Nome do ficheiro e matriz a preencher com os dados dos objectos (peso e valor)
+// Parï¿½metros de saï¿½da: Devolve a estrutura com os parï¿½metros
 struct info init_data(char *filename, int mat[][2])
 {
 	struct  info x;
@@ -26,7 +26,7 @@ struct info init_data(char *filename, int mat[][2])
 		printf("File not found\n");
 		exit(1);
 	}
-	// Leitura dos parâmetros do problema
+	// Leitura dos parï¿½metros do problema
 	fscanf(f, " pop: %d", &x.popsize);
 	fscanf(f, " pm: %f", &x.pm);
 	fscanf(f, " pr: %f", &x.pr);
@@ -45,11 +45,11 @@ struct info init_data(char *filename, int mat[][2])
 	for (i=0; i<x.numGenes; i++)
 		fscanf(f, " %d %d", &mat[i][0], &mat[i][1]);
 	fclose(f);
-	// Devolve a estrutura com os parâmetros
+	// Devolve a estrutura com os parï¿½metros
 	return x;
 }
 
-// Simula o lançamento de uma moeda, retornando o valor 0 ou 1
+// Simula o lanï¿½amento de uma moeda, retornando o valor 0 ou 1
 int flip()
 {
 	if ((((float)rand()) / RAND_MAX) < 0.5)
@@ -59,8 +59,8 @@ int flip()
 }
 
 // Criacao da populacao inicial. O vector e alocado dinamicamente
-// Parâmetro de entrada: Estrutura com parâmetros do problema
-// Parâmetro de saída: Preenche da estrutura da população apenas o vector binário com os elementos que estão dentro ou fora da mochila
+// Parï¿½metro de entrada: Estrutura com parï¿½metros do problema
+// Parï¿½metro de saï¿½da: Preenche da estrutura da populaï¿½ï¿½o apenas o vector binï¿½rio com os elementos que estï¿½o dentro ou fora da mochila
 pchrom init_pop(struct info d)
 {
 	int     i, j;
@@ -80,9 +80,9 @@ pchrom init_pop(struct info d)
 	return indiv;
 }
 
-// Actualiza a melhor solução encontrada
-// Parâmetro de entrada: populacao actual (pop), estrutura com parâmetros (d) e a melhor solucao encontrada até a geraçãoo imediatamente anterior (best)
-// Parâmetro de saída: a melhor solucao encontrada até a geração actual
+// Actualiza a melhor soluï¿½ï¿½o encontrada
+// Parï¿½metro de entrada: populacao actual (pop), estrutura com parï¿½metros (d) e a melhor solucao encontrada atï¿½ a geraï¿½ï¿½oo imediatamente anterior (best)
+// Parï¿½metro de saï¿½da: a melhor solucao encontrada atï¿½ a geraï¿½ï¿½o actual
 chrom get_best(pchrom pop, struct info d, chrom best)
 {
 	int i;
@@ -107,8 +107,8 @@ float rand_01()
 	return ((float)rand())/RAND_MAX;
 }
 
-// Escreve uma solução na consola
-// Parâmetro de entrada: populacao actual (pop) e estrutura com parâmetros (d)
+// Escreve uma soluï¿½ï¿½o na consola
+// Parï¿½metro de entrada: populacao actual (pop) e estrutura com parï¿½metros (d)
 void write_best(chrom x, struct info d)
 {
 	int i;

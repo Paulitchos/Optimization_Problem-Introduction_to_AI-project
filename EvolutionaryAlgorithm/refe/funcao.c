@@ -2,9 +2,9 @@
 #include "algoritmo.h"
 #include "funcao.h"
 
-// Calcula a qualidade de uma solução
-// Parâmetros de entrada: solução (sol), capacidade da mochila (d), matriz com dados do problema (mat) e numero de objectos (v)
-// Parâmetros de saída: qualidade da solução (se a capacidade for excedida devolve 0)
+// Calcula a qualidade de uma soluï¿½ï¿½o
+// Parï¿½metros de entrada: soluï¿½ï¿½o (sol), capacidade da mochila (d), matriz com dados do problema (mat) e numero de objectos (v)
+// Parï¿½metros de saï¿½da: qualidade da soluï¿½ï¿½o (se a capacidade for excedida devolve 0)
 float eval_individual(int sol[], struct info d, int mat[][2], int *v)
 {
 	int     i;
@@ -25,21 +25,21 @@ float eval_individual(int sol[], struct info d, int mat[][2], int *v)
 	}
 	if (sum_weight > d.capacity)
 	{
-        // Solucao inválida
+        // Solucao invï¿½lida
 		*v = 0;
 		return 0;
 	}
 	else
 	{
-        // Solucao válida
+        // Solucao vï¿½lida
 		*v = 1;
 		return sum_profit;
 	}
 }
 
-// Avaliacao da população
-// Parâmetros de entrada: populacao (pop), estrutura com parametros (d) e matriz com dados do problema (mat)
-// Parâmetros de saída: Preenche pop com os valores de fitness e de validade para cada solução
+// Avaliacao da populaï¿½ï¿½o
+// Parï¿½metros de entrada: populacao (pop), estrutura com parametros (d) e matriz com dados do problema (mat)
+// Parï¿½metros de saï¿½da: Preenche pop com os valores de fitness e de validade para cada soluï¿½ï¿½o
 void evaluate(pchrom pop, struct info d, int mat[][2])
 {
 	int i;

@@ -8,9 +8,22 @@
 
 #define DEFAULT_RUNS	10
 
-int main(int argc, char *argv[])
-{
-	char        nome_fich[100];
+/*
+pop: 100 população inicial
+pm: 0.01 probabilidade de mutação
+pr: 0.3 probabilidade de cruzamento
+tsize: 2 tamanho do torneio
+max_gen: 2500 máximo de gerações
+obj: 100 número de objetos
+cap: 250 capacidade da mochila (peso)
+Weight Profit peso e lucro de cada objeto
+2 8
+5 1
+10 5
+*/
+
+int main(int argc, char *argv[]){
+	char        nome_fich[100] = "",tmp[100] = "";
 	struct info EA_param;
 	pchrom      pop = NULL, parents = NULL;
 	chrom       best_run, best_ever;
@@ -35,8 +48,12 @@ int main(int argc, char *argv[])
         {
             runs = DEFAULT_RUNS;
             printf("Nome do Ficheiro: ");
-            fgets(nome_fich,100,stdin);
-			strtok(nome_fich, "\n"); // para retirar o '\n' do final
+            fgets(tmp,100,stdin);
+			strtok(tmp, "\n"); // para retirar o '\n' do final
+
+			strcat(nome_fich,"./EvolutionaryAlgorithm/");
+			strcat(nome_fich,tmp);
+			printf(nome_fich);
         }
     // Se o n�mero de execu��es do processo for menor ou igual a 0, termina o programa
 	if (runs <= 0)
