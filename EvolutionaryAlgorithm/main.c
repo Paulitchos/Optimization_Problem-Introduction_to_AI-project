@@ -208,7 +208,6 @@ struct info read_file(char *filename, int mat[][2]){
 	}
 	if (ded == 'p'){  //  <> <obj/arestas>
 		fscanf(f," edge %d %d",&x.numGenes , &x.capacity );
-		
 	}
 
 	x.popsize = 100; //fscanf(f, " pop: %d", &x.popsize);

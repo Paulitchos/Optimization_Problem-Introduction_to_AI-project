@@ -14,8 +14,7 @@ void init_rand()
 // Leitura dos par�metros e dos dados do problema
 // Par�metros de entrada: Nome do ficheiro e matriz a preencher com os dados dos objectos (peso e valor)
 // Par�metros de sa�da: Devolve a estrutura com os par�metros
-struct info init_data(char *filename, int mat[][2])
-{
+struct info init_data(char *filename, int mat[][2]){
 	struct  info x;
 	FILE    *f;
 	int     i;
