@@ -9,7 +9,6 @@
 #define PROB 0.01
 
 /*
-
 c FILE: myciel3.col
 c SOURCE: Michael Trick (trick@cmu.edu)
 c DESCRIPTION: Graph based on Mycielski transformation. 
@@ -81,10 +80,6 @@ int main(int argc, char *argv[]){
 		return 0;
 	init_rand();
 
-    
-
-
-            
     mat = read_file(nome_fich, &vert, &num_iter);
     // Preenche matriz de adjacencias
     sol = malloc(sizeof(int)*vert);

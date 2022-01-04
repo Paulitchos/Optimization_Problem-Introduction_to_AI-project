@@ -1,5 +1,5 @@
 evolutionary:
-	gcc ./EvolutionaryAlgorithm/*.c -o ./dist/evolutionary -lm && ./dist/evolutionary
+	gcc ./EvolutionaryAlgorithm/evolutionary.c -o ./dist/evolutionary -lm && ./dist/evolutionary
 
 evolutionaryrefe:
 	gcc ./EvolutionaryAlgorithm/refe/*.c -o ./dist/evolutionaryrefe -lm && ./dist/evolutionaryrefe
