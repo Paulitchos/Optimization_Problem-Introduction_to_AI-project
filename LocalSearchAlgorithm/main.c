@@ -5,7 +5,7 @@
 #include <math.h>
 #include <time.h>
 
-#define DEFAULT_RUNS 10
+#define DEFAULT_RUNS 1000
 #define PROB 0.01
 
 /*
@@ -32,12 +32,13 @@ int esferiamento(int sol[], int *mat, int vert, int num_iter);
 
 // utils
 int* read_file(char *nome, int *n, int *iter);
-void gera_sol_inicial(int *sol, int v);
+void gera_sol_inicial(int *sol, int v, int * mat, int prints);
 void escreve_sol(int *sol, int vert);
 void substitui(int a[], int b[], int n);
 void init_rand(void);
 int random_l_h(int min, int max);
 float rand_01(void);
+void printsol(int * sol, int vert);
 
 //funcao
 int calcula_fit(int a[], int *mat, int vert);
@@ -52,7 +53,7 @@ int main(int argc, char *argv[]){
 	printf("trepa colinas probabilistico\n");
     char    nome_fich[100] = "",tmp[100] = "";
     int     vert, num_iter, k, runs, custo, best_custo=0;
-    int     *grafo, *sol, *best;
+    int     *mat, *sol, *best;
 	float   mbf = 0.0;
 
 	int prints;
@@ -79,42 +80,52 @@ int main(int argc, char *argv[]){
 	if(runs <= 0)
 		return 0;
 	init_rand();
+
+    
+
+
+            
+    mat = read_file(nome_fich, &vert, &num_iter);
     // Preenche matriz de adjacencias
-    grafo = read_file(nome_fich, &vert, &num_iter);
-	sol = malloc(sizeof(int)*vert);
-	best = malloc(sizeof(int)*vert);
-	if(sol == NULL || best == NULL){
-		printf("Erro na alocacao de memoria");
-		exit(1);
-	}
-	for(k=0; k<runs; k++){
-		// Gerar solucao inicial
-		gera_sol_inicial(sol, vert);
-		if (prints) escreve_sol(sol, vert); // ***
-		// Trepa colinas
-		//custo = trepa_colinas(sol, grafo, vert, num_iter);
-		custo = esferiamento(sol, grafo, vert, num_iter); //esfriamento
-		// Escreve resultados da repeticao k
-		if (prints)  printf("\nRepeticao %d:", k); // ***
-		if (prints) escreve_sol(sol, vert); // ***
-		if (prints) printf("Custo final: %2d\n", custo); // ***
-		mbf += custo;
-		if(k==0 || best_custo > custo)
-		{
-			best_custo = custo;
-			substitui(best, sol, vert);
-		}
+    sol = malloc(sizeof(int)*vert);
+    best = malloc(sizeof(int)*vert);
+    if(sol == NULL || best == NULL){
+        printf("Erro na alocacao de memoria");
+        exit(1);
     }
-	// Escreve eresultados globais
-	printf("\n====================\n");
-	printf("\nMBF(mean best feat): %f\n", mbf/k); //médio
-	printf("\nMelhor solucao encontrada\n");
-	if (prints) escreve_sol(best, vert); // ***
-	printf("Custo final (melhor): %2d\n", best_custo);
-	printf("\n====================\n");
-	free(grafo);
+    for(k=0; k<runs; k++){
+        // Gerar solucao inicial
+        gera_sol_inicial(sol, vert, mat, prints);
+        if (prints) escreve_sol(sol, vert); // ***
+        // Trepa colinas
+        //custo = trepa_colinas(sol, grafo, vert, num_iter);
+        custo = esferiamento(sol, mat, vert, num_iter); //esfriamento // sol fica com a melhor soulução e retorna o custo dela
+        // Escreve resultados da repeticao k
+        printf("\nRepeticao %d:", k); // ***
+        if (prints) escreve_sol(sol, vert); // ***
+        if (prints) printf("Custo final: %2d\n", custo); // ***
+        mbf += custo;
+        if(k==0 || best_custo > custo)
+        {
+            best_custo = custo;
+            substitui(best, sol, vert);
+        }
+    }
+    // Escreve eresultados globais
+    printf("\n==========RESULTADOS==========\n");
+    printf("\nMelhor solucao encontrada\n");
+    if (prints) escreve_sol(best, vert); // ***
+
+    printf("\nMBF(mean best feat): %f\n", mbf/k); //médio
+    printf("Quantos verts em media das runs: %f\n", vert-(mbf/k));
+    printf("Custo final (melhor): %2d \n", best_custo); // (quanto menor melhor, = número de verts que nao pertencem a sol)
+    printf("Número de vertices da melhor sol: %2d ", vert-best_custo);
+    printf("\n====================\n");
+    free(mat);
     free(sol);
-	free(best);
+    free(best);
+
+
     return 0;
 }
 
@@ -132,7 +143,7 @@ int main(int argc, char *argv[]){
 // Leitura do ficheiro de input
 // Recebe: nome do ficheiro, numero de vertices (ptr), numero de iteracoes (ptr)
 // Devolve a matriz de adjacencias
-int* read_file(char *nome, int *n, int *iter){
+int* read_file(char *nome, int *verts, int *num_iter){
 	FILE *f;
 	int *p, *q;
 	int i, j;
@@ -140,7 +151,7 @@ int* read_file(char *nome, int *n, int *iter){
 
 	// Numero de iteracoes
 	printf("Escolha o numero de iteracoes: ");
-    scanf("%d",iter);
+    scanf("%d",num_iter);
 	while ((c = getchar()) != '\n' && c != EOF) { }
 
 	f=fopen(nome, "rt");
@@ -155,28 +166,28 @@ int* read_file(char *nome, int *n, int *iter){
 	}
 
     if (ded == 'p'){  //  <vertices> <arestas>
-		fscanf(f," edge %d %*d",n );
+		fscanf(f," edge %d %*d",verts );
 	}
 
 	// Alocacao dinamica da matriz
-	p = malloc(sizeof(int)*(*n)*(*n));
+	p = malloc(sizeof(int)*(*verts)*(*verts));
 	if(!p){ printf("Erro na alocacao de memoria\n");exit(1);}
 
-    memset(p, 0, sizeof(int)*(*n)*(*n));
+    memset(p, 0, sizeof(int)*(*verts)*(*verts));
 	q=p;
     // Preenchimento da matriz unidimensional, tratada como bidimensional, cada linha representa um vertice e tem uma coluna para cada outro verticer, onde 0 é que há uma aresta entre eles, e 1 quer dizer que não há
     int vert1, vert2;
-    for (i=0; i< *n; i++){
+    for (i=0; i< *verts; i++){
 		fscanf(f, " e %d %d", &vert1, &vert2);
-        q[(vert1-1)*(*n)+(vert2-1)]=1;
+        q[(vert1-1)*(*verts)+(vert2-1)]=1;
 	}
 
 	fclose(f);
 
     // print da matriz
     int k=0;
-    for (i=0; i<*n; i++) {
-        for(j=0; j<*n; j++){
+    for (i=0; i<*verts; i++) {
+        for(j=0; j<*verts; j++){
             printf("%d ",q[k++]);
         }
         putchar('\n');
@@ -185,21 +196,58 @@ int* read_file(char *nome, int *n, int *iter){
 	return p;
 }
 
+int solucaovalida(int *sol, int v, int * mat,int prints);
+
 // Gera a solucao inicial
 // Parametros: solucao, numero de vertices
-void gera_sol_inicial(int *sol, int v)
-{
+void gera_sol_inicial(int *sol, int v, int * mat, int prints){
+
+    int i, x;
+
+    do {
+
+        for(i=0; i<v; i++) //meter tudo a zeros no array sol de tamanho v(vértices)
+            sol[i]=0;
+
+        int num_verts_sol = random_l_h(0, v-1);
+        for(i=0; i<num_verts_sol; i++){
+            // mete aleatoriamente um dos indexs que estão a zero a um
+            do
+                x = random_l_h(0, v-1);
+            while(sol[x] != 0);
+            sol[x]=1;
+        }
+
+    } while (solucaovalida(sol, v, mat, prints) == 0);
+
+
+    /*
 	int i, x;
 
-	for(i=0; i<v; i++)
+	for(i=0; i<v; i++) //meter tudo a zeros no array sol de tamanho v(vértices)
         sol[i]=0;
-	for(i=0; i<v/2; i++)
-    {
+	for(i=0; i<v/2; i++){
+        // mete aleatoriamente um dos indexs que estão a zero a um
         do
 			x = random_l_h(0, v-1);
         while(sol[x] != 0);
         sol[x]=1;
     }
+    */
+}
+
+int solucaovalida(int *sol, int v, int * mat, int prints){
+    int i=0, j=0;
+    for(i=0; i<v; i++)
+		if(sol[i]==1)
+		{
+			for(j=0; j<v;j++)
+				if(sol[j]==1 && mat[i*v+j]==1){
+				    if (prints) printf(" sol inval ");
+                    return 0; 
+                }
+		}
+    return 1;
 }
 
 // Escreve solucao
@@ -208,14 +256,14 @@ void escreve_sol(int *sol, int vert)
 {
 	int i;
 
-	printf("\nConjunto A: ");
+	printf("\nVertices que nao pertecem a sol: ");
 	for(i=0; i<vert; i++)
 		if(sol[i]==0)
-			printf("%2d  ", i);
-	printf("\nConjunto B: ");
+			printf("%2d  ", i+1);
+	printf("\nVertices que pertecem a sol: ");
 	for(i=0; i<vert; i++)
 		if(sol[i]==1)
-			printf("%2d  ", i);
+			printf("%2d  ", i+1);
 	printf("\n");
 }
 
@@ -256,32 +304,65 @@ float rand_01()
    |__/  |__/|________/ \______/  \______/ |__/  |__/|______/   |__/   |__/     |__/ \______/  */
 
 
+int tudoAUns(int *sol, int v);
+int tudoAZeros(int *sol, int v);
+
 // Gera um vizinho
 // Parametros: solucao actual, vizinho, numero de vertices
 //swap two vertices
-void gera_vizinho(int a[], int b[], int n)
+void gera_vizinho(int sol[], int nova_sol[], int vert)
 {
     int i, p1, p2;
 
-    for(i=0; i<n; i++)
-        b[i]=a[i];
+    for(i=0; i<vert; i++)
+        nova_sol[i]=sol[i];
+
 	// Encontra posicao com valor 0
-    do
-        p1=random_l_h(0, n-1);
-    while(b[p1] != 0);
-	// Encontra posicao com valor 0
-    do
-        p2=random_l_h(0, n-1);
-    while(b[p2] != 1);
+    if (tudoAUns(sol, vert) == 0){
+        do
+            p1=random_l_h(0, vert-1);
+        while(nova_sol[p1] != 0);
+    }
+	// Encontra posicao com valor 1
+
+    if (tudoAZeros(sol,vert) == 0){
+        do
+            p2=random_l_h(0, vert-1);
+        while(nova_sol[p2] != 1);
+    }
 	// Troca
-    b[p1] = 1;
-    b[p2] = 0;
+    nova_sol[p1] = 1;
+    nova_sol[p2] = 0;
 }
 
+int tudoAUns(int *sol, int v){
+    for(int i=0; i<v; i++)
+        if (sol[i]!=1) 
+            return 0; 
+    return 1;
+}
+
+int tudoAZeros(int *sol, int v){
+    for(int i=0; i<v; i++)
+        if (sol[i]!=0) 
+            return 0; 
+    return 1;
+}
+
+void printsol(int * sol, int vert){
+    for(int i=0; i<vert; i++)
+        printf("%d ", sol[i]);
+    putchar('|');
+}
 /*if erro > 0 then current <- $next 
     else current <- next with probibility e^(erro/t)
 
     */
+
+   /*
+   sol - [0, 0 ,1, 0 , 1, 0 , 1, 0...
+   mat - tabela com as ligações de todos os vertices
+   */
 
 int esferiamento(int sol[], int *mat, int vert, int num_iter) { // trepa_colinas alterado
 
@@ -301,7 +382,7 @@ int esferiamento(int sol[], int *mat, int vert, int num_iter) { // trepa_colinas
 		// Avalia vizinho
 		custo_viz = calcula_fit(nova_sol, mat, vert);
         if(custo_viz<=custo) {
-            substitui(sol, nova_sol, vert);
+            substitui(sol, nova_sol, vert); // sol fica = nova_sol
             custo = custo_viz;
         } else {
             erro = custo_viz - custo; //tem que ser modulo
@@ -309,9 +390,11 @@ int esferiamento(int sol[], int *mat, int vert, int num_iter) { // trepa_colinas
             /*  if erro > 0 then current <- $next 
                 else current <- next with probibility e^(erro/temp) */
 
-            erro = custo - custo_viz; prob_aceitar = exp(erro/temp);
+            erro = custo - custo_viz; 
+            prob_aceitar = exp(erro/temp); // mutação
             if (prob_aceitar>rand_01()){
-                substitui(sol, nova_sol, vert); custo = custo_viz;
+                substitui(sol, nova_sol, vert); 
+                custo = custo_viz;
             }
             /*    
             if (erro > 0) {
@@ -394,17 +477,22 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
    | $$      |  $$$$$$/| $$ \  $$|  $$$$$$/| $$  | $$|  $$$$$$/
    |__/       \______/ |__/  \__/ \______/ |__/  |__/ \______/  */
 
-int calcula_fit(int a[], int *mat, int vert)
+int calcula_fit(int sol[], int *mat, int vert) // mat é uma tabela de dimensões vert*vert
 {
-	int total=0;
+    // calcula o custo: 
+    /*
+    O custo da bissecção é dado pelo número de arcos que efetuam ligações entre
+    vértices que pertencem a conjuntos diferentes (ou seja, arcos que ligam um vértice
+    de V1 a um vértice de V2);
+    */
+	int custo=vert;
 	int i, j;
 
-	for(i=0; i<vert; i++)
-		if(a[i]==0)
-		{
-			for(j=0; j<vert;j++)
-				if(a[j]==1 && *(mat+i*vert+j)==1)
-				    total++;
-		}
-	return total;
+    //syntax for mat[l][c] will be mat[l*sizeY+c]
+
+    for(i=0; i<vert; i++)
+		if(sol[i]==1)
+			custo--;
+
+	return custo;
 }  
