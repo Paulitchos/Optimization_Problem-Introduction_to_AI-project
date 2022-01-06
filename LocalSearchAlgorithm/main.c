@@ -5,7 +5,7 @@
 #include <math.h>
 #include <time.h>
 
-#define DEFAULT_RUNS 1000
+#define DEFAULT_RUNS 100
 #define PROB 0.01
 
 /*
@@ -24,10 +24,11 @@ e 2 3
 Tamanho da população - arestas
 Probabilidades do operador de recombinação / mutação - pm e pr
 */
-
+void escreve_sol2(int *sol, int vert);
 // algoritmo
 int trepa_colinas(int sol[], int *mat, int vert, int num_iter);
-int esferiamento(int sol[], int *mat, int vert, int num_iter);
+int esferiamento(int sol[], int *mat, int vert, int num_iter, int print);
+int flip();
 
 // utils
 int* read_file(char *nome, int *n, int *iter);
@@ -94,7 +95,7 @@ int main(int argc, char *argv[]){
         if (prints) escreve_sol(sol, vert); // ***
         // Trepa colinas
         //custo = trepa_colinas(sol, grafo, vert, num_iter);
-        custo = esferiamento(sol, mat, vert, num_iter); //esfriamento // sol fica com a melhor soulução e retorna o custo dela
+        custo = esferiamento(sol, mat, vert, num_iter, prints); //esfriamento // sol fica com a melhor soulução e retorna o custo dela
         // Escreve resultados da repeticao k
         printf("\nRepeticao %d:", k); // ***
         if (prints) escreve_sol(sol, vert); // ***
@@ -175,6 +176,7 @@ int* read_file(char *nome, int *verts, int *num_iter){
     for (i=0; i< *verts; i++){
 		fscanf(f, " e %d %d", &vert1, &vert2);
         q[(vert1-1)*(*verts)+(vert2-1)]=1;
+        q[(vert2-1)*(*verts)+(vert1-1)]=1;
 	}
 
 	fclose(f);
@@ -212,6 +214,8 @@ void gera_sol_inicial(int *sol, int v, int * mat, int prints){
             while(sol[x] != 0);
             sol[x]=1;
         }
+    
+    //escreve_sol2(sol, v);
 
     } while (solucaovalida(sol, v, mat, prints) == 0);
 
@@ -234,8 +238,7 @@ void gera_sol_inicial(int *sol, int v, int * mat, int prints){
 int solucaovalida(int *sol, int v, int * mat, int prints){
     int i=0, j=0;
     for(i=0; i<v; i++)
-		if(sol[i]==1)
-		{
+		if(sol[i]==1){
 			for(j=0; j<v;j++)
 				if(sol[j]==1 && mat[i*v+j]==1){
 				    if (prints) printf(" sol inval ");
@@ -260,6 +263,16 @@ void escreve_sol(int *sol, int vert)
 		if(sol[i]==1)
 			printf("%2d  ", i+1);
 	printf("\n");
+}
+
+void escreve_sol2(int *sol, int vert)
+{
+    int i;
+
+    for(i=0;i<vert;i++) {
+        printf(" %d |", sol[i]);
+    }
+    printf("\n\n\n");
 }
 
 // copia vector b para a (tamanho n)
@@ -313,21 +326,31 @@ void gera_vizinho(int sol[], int nova_sol[], int vert)
         nova_sol[i]=sol[i];
 
 	// Encontra posicao com valor 0
-    if (tudoAUns(sol, vert) == 0){
-        do
-            p1=random_l_h(0, vert-1);
-        while(nova_sol[p1] != 0);
+    //if (random_l_h(0,1) == 1 ){
+    if (flip()==1){ 
+        if (tudoAUns(sol, vert) == 0){
+            do
+                p1=random_l_h(0, vert-1);
+            while(nova_sol[p1] != 0);
+        }
+        nova_sol[p1] = 1;
     }
-	// Encontra posicao com valor 1
+   
+        
+    //}
 
-    if (tudoAZeros(sol,vert) == 0){
-        do
-            p2=random_l_h(0, vert-1);
-        while(nova_sol[p2] != 1);
+	// Encontra posicao com valor 1
+    if (flip()==1){ 
+        if (tudoAZeros(sol,vert) == 0){
+            do
+                p2=random_l_h(0, vert-1);
+            while(nova_sol[p2] != 1);
+        }
+        nova_sol[p2] = 0;
     }
 	// Troca
-    nova_sol[p1] = 1;
-    nova_sol[p2] = 0;
+    
+    
 }
 
 int tudoAUns(int *sol, int v){
@@ -359,7 +382,7 @@ void printsol(int * sol, int vert){
    mat - tabela com as ligações de todos os vertices
    */
 
-int esferiamento(int sol[], int *mat, int vert, int num_iter) { // trepa_colinas alterado
+int esferiamento(int sol[], int *mat, int vert, int num_iter, int prints) { // trepa_colinas alterado
 
     int *nova_sol, custo, custo_viz, i; 
     float temp, erro, prob_aceitar, max = 100, min = 5; // Temperaturas inicial e final
@@ -373,7 +396,10 @@ int esferiamento(int sol[], int *mat, int vert, int num_iter) { // trepa_colinas
     while (temp > min) {
         temp -= (max-min) / (float)num_iter; // Descer temperatura
         // Gera vizinho
-		gera_vizinho(sol, nova_sol, vert);
+        do {
+            gera_vizinho(sol, nova_sol, vert);
+        } while (solucaovalida(nova_sol, vert, mat, prints) == 0);
+		
 		// Avalia vizinho
 		custo_viz = calcula_fit(nova_sol, mat, vert);
         if(custo_viz<=custo) {
@@ -491,3 +517,11 @@ int calcula_fit(int sol[], int *mat, int vert) // mat é uma tabela de dimensõe
 
 	return custo;
 }  
+
+int flip()
+{
+	if ((((float)rand()) / (float)RAND_MAX) < 0.5)
+		return 0;
+	else
+		return 1;
+}
