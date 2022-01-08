@@ -39,9 +39,10 @@ void init_rand(void);
 int random_l_h(int min, int max);
 float rand_01(void);
 void printsol(int * sol, int vert);
+int penalizacao(int *sol, int *mat,int vert, int fit_antigo);
 
 //funcao
-int calcula_fit(int a[], int *mat, int vert);
+int calcula_fit(int a[], int *mat, int vert, int);
 
 /*
 Ex:
@@ -392,7 +393,7 @@ int esferiamento(int sol[], int *mat, int vert, int num_iter, int prints) { // t
 	nova_sol = malloc(sizeof(int)*vert);
     if(nova_sol == NULL){ printf("Erro na alocacao de memoria"); exit(1); }
 	// Avalia solucao inicial
-    custo = calcula_fit(sol, mat, vert); //fico a saber qual é o custo da minha solução atual
+    custo = calcula_fit(sol, mat, vert,custo); //fico a saber qual é o custo da minha solução atual
     temp = max;
     
     while (temp > min) {
@@ -403,7 +404,7 @@ int esferiamento(int sol[], int *mat, int vert, int num_iter, int prints) { // t
         } while (solucaovalida(nova_sol, vert, mat, prints) == 0);
 		
 		// Avalia vizinho
-		custo_viz = calcula_fit(nova_sol, mat, vert);
+		custo_viz = calcula_fit(nova_sol, mat, vert,custo);
         if(custo_viz<=custo) {
             substitui(sol, nova_sol, vert); // sol fica = nova_sol
             custo = custo_viz;
@@ -450,7 +451,7 @@ int verifica_validade(int *sol, int *mat,int vert) {
 
 int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
 {
-    int *nova_sol, custo, custo_viz, i;
+    int *nova_sol, custo=0, fit_viz, i;
     int verifica=0;
     //matriz para a nova solucao
     nova_sol = malloc(sizeof(int)*vert);
@@ -458,7 +459,7 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
     //------------------------------------------//
 
     // Avalia solucao inicial
-    custo= calcula_fit(sol,mat,vert);
+    custo= calcula_fit(sol,mat,vert,custo);
     //-------------------------------------//
 
     for(i=0; i<num_iter; i++)
@@ -466,14 +467,15 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
         do {
             gera_vizinho(sol, nova_sol, vert);
             verifica = verifica_validade(nova_sol, mat, vert);
+            verifica = 1; // PENALIZAÇAO
         }while(verifica==0);
         // Avalia vizinho
-        custo_viz= calcula_fit(nova_sol,mat,vert);
+        fit_viz= calcula_fit(nova_sol,mat,vert,custo);
 
-        if(custo_viz >= custo) //trocar isto pela linha de baixo
+        if(fit_viz >= custo) //trocar isto pela linha de baixo
         {
             substitui(sol, nova_sol, vert);
-            custo = custo_viz;
+            custo = fit_viz;
         }
     }
     free(nova_sol);
@@ -546,7 +548,7 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
    | $$      |  $$$$$$/| $$ \  $$|  $$$$$$/| $$  | $$|  $$$$$$/
    |__/       \______/ |__/  \__/ \______/ |__/  |__/ \______/  */
 
-int calcula_fit(int sol[], int *mat, int vert) // mat é uma tabela de dimensões vert*vert
+int calcula_fit(int sol[], int *mat, int vert, int fit_antigo) // mat é uma tabela de dimensões vert*vert
 {
     // calcula o custo: 
     /*
@@ -557,6 +559,11 @@ int calcula_fit(int sol[], int *mat, int vert) // mat é uma tabela de dimensõe
 	int custo=0;
 	int i, j;
 
+    if (verifica_validade(sol, mat, vert) == 0){ // PENALIZAÇÃO
+        return penalizacao(sol, mat, vert, fit_antigo); // se a nova é invalida tira-lhe fit
+    }
+
+
     //syntax for mat[l][c] will be mat[l*sizeY+c]
 
     for(i=0; i<vert; i++)
@@ -565,6 +572,10 @@ int calcula_fit(int sol[], int *mat, int vert) // mat é uma tabela de dimensõe
 
 	return custo;
 }  
+
+int penalizacao(int *sol, int *mat,int vert, int fit_antigo){
+    return fit_antigo-1;
+}
 
 int flip()
 {
