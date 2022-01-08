@@ -113,10 +113,10 @@ int main(int argc, char *argv[]){
     printf("\nMelhor solucao encontrada\n");
     if (prints) escreve_sol(best, vert); // ***
 
-    printf("\nMBF(mean best feat): %f\n", mbf/k); //médio
-    printf("Quantos verts em media das runs: %f\n", vert-(mbf/k));
-    printf("Custo final (melhor): %2d \n", best_custo); // (quanto menor melhor, = número de verts que nao pertencem a sol)
-    printf("Número de vertices da melhor sol: %2d ", vert-best_custo);
+    printf("\nMBF(mean best feat): %f\n", vert-(mbf/k)); //médio
+    printf("Quantos verts em media das runs: %f\n",mbf/k );
+    printf("Custo final (melhor): %2d \n", vert-best_custo); // (quanto menor melhor, = número de verts que nao pertencem a sol)
+    printf("Número de vertices da melhor sol: %2d ", best_custo);
     printf("\n====================\n");
     free(mat);
     free(sol);
