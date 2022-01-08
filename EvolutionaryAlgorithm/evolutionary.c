@@ -7,6 +7,8 @@
 #define DEFAULT_RUNS	10
 #define MAX_OBJ 1000
 
+int global = 0;
+
 // EStrutura para armazenar parametros
 struct info
 {
@@ -194,23 +196,28 @@ int main(int argc, char *argv[])
 			best_run = get_best(pop, EA_param, best_run);
 			gen_actual++;
 
+			write_best(*pop, EA_param);
+			printf("validade:%d\n",pop->valido);
+
+			//global ++;
+			//if (global == 20) exit (0);
 			//for (int l=0; l<EA_param.popsize; l++) {
 			//	printsol(pop[l].p, EA_param.numGenes);
 			//	putchar('\n');
 			//}
 			//printf("\n=========================\n");
 
-			printsol(best_run.p, EA_param.numGenes);
-			printf("\n=========================\n");
+			//printsol(best_run.p, EA_param.numGenes);
+			//printf("\n=========================\n");
 
 		}
 		// Contagem das solu��es inv�lidas
 		for (inv=0, i=0; i<EA_param.popsize; i++)
 			if (pop[i].valido == 0){
 				inv++;
-				printf("sol %d invalida\n", i);
+				//printf("sol %d invalida\n", i);
 			} else {
-				printf("sol %d VALIDA\n", i);
+				//printf("sol %d VALIDA\n", i);
 			}
 		// Escreve resultados da repeti��o que terminou
 		printf("\nRepeticao %d:", r);
@@ -226,6 +233,7 @@ int main(int argc, char *argv[])
 	// Escreve resultados globais
 	printf("\n\nMBF(mean best fitness): %f\n", mbf/r); 
 	printf("\nMelhor solucao encontrada");
+	printf("\nvalida?: %d\n",best_ever.valido);
 	write_best(best_ever, EA_param);
 	return 0;
 }
@@ -256,7 +264,7 @@ int * read_file(char *filename, struct info * pEA_param )
 	pEA_param->pm = 0.01; //fscanf(f, " pm: %f", &x.pm);
 	pEA_param->pr = 0.7; //fscanf(f, " pr: %f", &x.pr);
 	pEA_param->tsize = 2; //fscanf(f, " tsize: %d", &x.tsize);
-	pEA_param->numGenerations = 2500;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
+	pEA_param->numGenerations = 700;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
 	//x.capacity = 250;//fscanf(f, " cap: %d", &x.capacity);
 	pEA_param->ro = 0.0;
 	if (pEA_param->numGenes > MAX_OBJ){printf("Number of itens is superior to MAX_OBJ\n");exit(1);}
@@ -265,6 +273,7 @@ int * read_file(char *filename, struct info * pEA_param )
 	int *p, *q;
 	int i, j;
     int c;
+	int arestas;
 
 	// Numero de iteracoes
 	//printf("Escolha o numero de iteracoes: ");
@@ -283,7 +292,7 @@ int * read_file(char *filename, struct info * pEA_param )
 	}
 
     if (ded == 'p'){  //  <vertices> <arestas>
-		fscanf(f," edge %d %*d", &pEA_param->numGenes);
+		fscanf(f," edge %d %d", &pEA_param->numGenes, &arestas);
 	}
 
 	// Alocacao dinamica da matriz
@@ -291,12 +300,14 @@ int * read_file(char *filename, struct info * pEA_param )
 	if(!p){ printf("Erro na alocacao de memoria\n");exit(1);}
 
     memset(p, 0, sizeof(int)*(pEA_param->numGenes)*(pEA_param->numGenes));
+
 	q=p;
     // Preenchimento da matriz unidimensional, tratada como bidimensional, cada linha representa um vertice e tem uma coluna para cada outro verticer, onde 0 é que há uma aresta entre eles, e 1 quer dizer que não há
     int vert1, vert2;
-    for (i=0; i< pEA_param->numGenes; i++){
+    for (i=0; i< arestas; i++){
 		fscanf(f, " e %d %d", &vert1, &vert2);
-        q[(vert1-1)*(pEA_param->numGenes)+(vert2-1)]=1;
+        p[(vert1-1)*(pEA_param->numGenes)+(vert2-1)]=1;
+		p[(vert2-1)*(pEA_param->numGenes)+(vert1-1)]=1;
 	}
 
 	fclose(f);
@@ -304,7 +315,7 @@ int * read_file(char *filename, struct info * pEA_param )
     // print da matriz
     int k=0;
     for (i=0; i<pEA_param->numGenes; i++) {
-        for(j=0; j<pEA_param->numGenes; j++){
+        for(j=0; j<pEA_param->numGenes; j++) {
             printf("%d ",q[k++]);
         }
         putchar('\n');
@@ -474,7 +485,7 @@ void write_best(chrom x, struct info d)
 {
 	int i;
 
-	printf("\nBest individual: %4.1f\n", x.fitness);
+	printf("Best individual: %4.1f\n", x.fitness);
 	for (i=0; i<d.numGenes; i++)
 		printf("%d", x.p[i]);
 	putchar('\n');
@@ -595,10 +606,43 @@ void mutation(pchrom offspring, struct info d)
 
 int solucaovalida(int *sol, int v, int * mat);
 int calcula_fit(int sol[], int *mat, int vert);
+int verifica_validade(int *sol, int *mat,struct info d);
+
+/* CERQUEIRA
+float eval_individual(int sol[], struct info d, int *mat, int *v){
+	int total=0;
+    int i ,verifica;
+    verifica=verifica_validade(sol, mat,d);
+    if(verifica==0) {
+        *v=0;
+        return 0;
+    }else{
+    	for(i=0;i<d.numGenes;i++){
+        	if(sol[i]==1)
+            	total++;
+    		}
+    	*v=1;
+    	return total;
+	}
+}
+
+int verifica_validade(int *sol, int *mat,struct info d) {
+    int i = 0, j = 0;
+    for (i = 0; i < d.numGenes; i++)
+        if (sol[i] == 1) {
+            for (j = 0; j < d.numGenes; j++)
+                if (sol[j] == 1 && mat[i * d.numGenes + j] == 1) {
+                    return 0;
+                }
+        }
+    return 1;
+}
+*/
 
 // Calcula a qualidade de uma solu��o
 // Par�metros de entrada: solu��o (sol), capacidade da mochila (d), matriz com dados do problema (mat) e numero de objectos (v)
 // Par�metros de sa�da: qualidade da solu��o (se a capacidade for excedida devolve 0)
+
 float eval_individual(int sol[], struct info d, int *mat, int *v){
 	int     i, min;
 	float   ro;
@@ -668,6 +712,7 @@ int solucaovalida(int *sol, int v, int * mat){
 		}
     return 1;
 }
+
 
 // Avaliacao da popula��o
 // Par�metros de entrada: populacao (pop), estrutura com parametros (d) e matriz com dados do problema (mat)

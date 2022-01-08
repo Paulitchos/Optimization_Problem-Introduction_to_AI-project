@@ -5,7 +5,7 @@
 #include <math.h>
 #include <time.h>
 
-#define DEFAULT_RUNS 100
+#define DEFAULT_RUNS 10
 #define PROB 0.01
 
 /*
@@ -95,7 +95,8 @@ int main(int argc, char *argv[]){
         if (prints) escreve_sol(sol, vert); // ***
         // Trepa colinas
         //custo = trepa_colinas(sol, grafo, vert, num_iter);
-        custo = esferiamento(sol, mat, vert, num_iter, prints); //esfriamento // sol fica com a melhor soulução e retorna o custo dela
+        custo = trepa_colinas(sol, mat, vert, num_iter);
+        //custo = esferiamento(sol, mat, vert, num_iter, prints); //esfriamento // sol fica com a melhor soulução e retorna o custo dela
         // Escreve resultados da repeticao k
         printf("\nRepeticao %d:", k); // ***
         if (prints) escreve_sol(sol, vert); // ***
@@ -144,6 +145,7 @@ int* read_file(char *nome, int *verts, int *num_iter){
 	int *p, *q;
 	int i, j;
     int c;
+    int arestas;
 
 	// Numero de iteracoes
 	printf("Escolha o numero de iteracoes: ");
@@ -162,7 +164,7 @@ int* read_file(char *nome, int *verts, int *num_iter){
 	}
 
     if (ded == 'p'){  //  <vertices> <arestas>
-		fscanf(f," edge %d %*d",verts );
+		fscanf(f," edge %d %d",verts, &arestas );
 	}
 
 	// Alocacao dinamica da matriz
@@ -173,7 +175,7 @@ int* read_file(char *nome, int *verts, int *num_iter){
 	q=p;
     // Preenchimento da matriz unidimensional, tratada como bidimensional, cada linha representa um vertice e tem uma coluna para cada outro verticer, onde 0 é que há uma aresta entre eles, e 1 quer dizer que não há
     int vert1, vert2;
-    for (i=0; i< *verts; i++){
+    for (i=0; i< arestas; i++){
 		fscanf(f, " e %d %d", &vert1, &vert2);
         q[(vert1-1)*(*verts)+(vert2-1)]=1;
         q[(vert2-1)*(*verts)+(vert1-1)]=1;
@@ -433,6 +435,52 @@ int esferiamento(int sol[], int *mat, int vert, int num_iter, int prints) { // t
 // Trepa colinas first-choice
 // Parametros: solucao, matriz de adjacencias, numero de vertices e numero de iteracoes
 // Devolve o custo da melhor solucao encontrada
+
+int verifica_validade(int *sol, int *mat,int vert) {
+    int i = 0, j = 0;
+    for (i = 0; i < vert; i++)
+        if (sol[i] == 1) {
+            for (j = 0; j < vert; j++)
+                if (sol[j] == 1 && mat[i * vert + j] == 1) {
+                    return 0;
+                }
+        }
+    return 1;
+}
+
+int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
+{
+    int *nova_sol, custo, custo_viz, i;
+    int verifica=0;
+    //matriz para a nova solucao
+    nova_sol = malloc(sizeof(int)*vert);
+    if(nova_sol == NULL){ printf("Erro na alocacao de memoria"); exit(1);}
+    //------------------------------------------//
+
+    // Avalia solucao inicial
+    custo= calcula_fit(sol,mat,vert);
+    //-------------------------------------//
+
+    for(i=0; i<num_iter; i++)
+    {
+        do {
+            gera_vizinho(sol, nova_sol, vert);
+            verifica = verifica_validade(nova_sol, mat, vert);
+        }while(verifica==0);
+        // Avalia vizinho
+        custo_viz= calcula_fit(nova_sol,mat,vert);
+
+        if(custo_viz >= custo) //trocar isto pela linha de baixo
+        {
+            substitui(sol, nova_sol, vert);
+            custo = custo_viz;
+        }
+    }
+    free(nova_sol);
+    return custo;
+}
+
+/*
 int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
 {
     int *nova_sol, custo, custo_viz, i; 
@@ -482,13 +530,13 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
                 custo=custo_viz2;
             }
         }
-        */
+        
     }
     free(nova_sol);
     free(nova_sol2);
     return custo;
 }
-
+*/
 /*  /$$$$$$$$ /$$   /$$ /$$   /$$  /$$$$$$   /$$$$$$   /$$$$$$ 
    | $$_____/| $$  | $$| $$$ | $$ /$$__  $$ /$$__  $$ /$$__  $$
    | $$      | $$  | $$| $$$$| $$| $$  \__/| $$  \ $$| $$  \ $$
@@ -506,14 +554,14 @@ int calcula_fit(int sol[], int *mat, int vert) // mat é uma tabela de dimensõe
     vértices que pertencem a conjuntos diferentes (ou seja, arcos que ligam um vértice
     de V1 a um vértice de V2);
     */
-	int custo=vert;
+	int custo=0;
 	int i, j;
 
     //syntax for mat[l][c] will be mat[l*sizeY+c]
 
     for(i=0; i<vert; i++)
 		if(sol[i]==1)
-			custo--;
+			custo++;
 
 	return custo;
 }  
