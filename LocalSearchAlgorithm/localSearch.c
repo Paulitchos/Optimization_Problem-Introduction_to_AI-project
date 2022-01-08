@@ -472,8 +472,7 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
         // Avalia vizinho
         fit_viz= calcula_fit(nova_sol,mat,vert,custo);
 
-        if(fit_viz >= custo) //trocar isto pela linha de baixo
-        {
+        if(fit_viz >= custo){ // PARA ACEITAR SOLUÇÕES DE CUSTO IGUAL OU NAO
             substitui(sol, nova_sol, vert);
             custo = fit_viz;
         }
