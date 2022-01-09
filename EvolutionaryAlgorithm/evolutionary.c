@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #define DEFAULT_RUNS	10
 #define MAX_OBJ 1000
@@ -60,10 +61,11 @@ void init_rand();
 int random_l_h(int min, int max);
 float rand_01();
 int flip();
+float eval_individual(int sol[], struct info d, int *mat, int *v, float best_fitness_found);
 
 
 // funcao
-void evaluate(pchrom pop, struct info d, int * mat);
+void evaluate(pchrom pop, struct info d, int * mat, float best_fitness_found);
 
 
 /*
@@ -164,13 +166,16 @@ int main(int argc, char *argv[])
     // Preenche a matriz com dados dos objectos (peso e valor) e a estrutura EA_param que foram definidos no ficheiro de input
 	mat = read_file(nome_fich,&EA_param);
 	// Faz um ciclo com o n�mero de execu��es definidas
+
+	float best_fitness_found = 0;
+
 	for (r=0; r<runs; r++)
 	{
         // Gera��o da popula��o inicial
 		pop = init_pop(EA_param); // pop ficam com array de soluções (structs chrom), que dentro delas têm arrays de 1s e zeros aleatorios
 
         // Avalia a popula��o inicial
-		evaluate(pop, EA_param, mat); // mat tem os dados direitinhos do ficheiro de texto
+		evaluate(pop, EA_param, mat,  best_fitness_found); // mat tem os dados direitinhos do ficheiro de texto
 
 		// Como ainda n�o existe, escolhe-se como melhor solu��o a primeira da popula��o (poderia ser outra qualquer)
 		best_run = pop[0];
@@ -180,6 +185,7 @@ int main(int argc, char *argv[])
 		parents = malloc(sizeof(chrom)*EA_param.popsize);
 		if (parents==NULL){printf("Erro na alocacao de memoria\n");exit(1);}
 
+		
 		// Ciclo de optimiza��o
 		gen_actual = 1;
 		while (gen_actual <= EA_param.numGenerations)
@@ -189,13 +195,13 @@ int main(int argc, char *argv[])
             // Aplica os operadores gen�ticos aos pais (os descendentes ficam armazenados na estrutura pop)
 			genetic_operators(parents, EA_param, pop); // pop fica com o crossover dos parents e da propria pop, e é aplicada mutação à pop
             // Avalia a nova popula��o (a dos filhos)
-			evaluate(pop, EA_param, mat); // calcula se é válida e o fitness de cada solução
+			evaluate(pop, EA_param, mat, best_run.fitness); // calcula se é válida e o fitness de cada solução
             // Actualiza a melhor solu��o encontrada
 			best_run = get_best(pop, EA_param, best_run);
 			gen_actual++;
 
-			write_best(*pop, EA_param);
-			printf("validade:%d\n",pop->valido);
+		//	write_best(*pop, EA_param);
+		//	printf("validade:%d\n",pop->valido);
 
 			//global ++;
 			//if (global == 20) exit (0);
@@ -258,7 +264,7 @@ void init_rand()
 int * read_file(char *filename, struct info * pEA_param )
 {
 	
-	pEA_param->popsize = 100; //fscanf(f, " pop: %d", &x.popsize);
+	pEA_param->popsize = 200; //fscanf(f, " pop: %d", &x.popsize);
 	pEA_param->pm = 0.01; //fscanf(f, " pm: %f", &x.pm);
 	pEA_param->pr = 0.7; //fscanf(f, " pr: %f", &x.pr);
 	pEA_param->tsize = 2; //fscanf(f, " tsize: %d", &x.tsize);
@@ -622,7 +628,7 @@ int verifica_validade(int *sol, int *mat,struct info d) {
 // Par�metros de entrada: solu��o (sol), capacidade da mochila (d), matriz com dados do problema (mat) e numero de objectos (v)
 // Par�metros de sa�da: qualidade da solu��o (se a capacidade for excedida devolve 0)
 
-float eval_individual(int sol[], struct info d, int *mat, int *v){
+float eval_individual(int sol[], struct info d, int *mat, int *v, float best_fitness_found){
 	int     i, min;
 	float   ro;
 
@@ -638,15 +644,16 @@ float eval_individual(int sol[], struct info d, int *mat, int *v){
 			sol[min] = 0; // retirá-lo
 			*/
 			
-				int x=0;
-				int num_verts_sol = random_l_h(0, d.numGenes-1);
-				for(int j=0; j<d.numGenes; j++){
-					do{
-						x = random_l_h(0, d.numGenes-1);
-					}while(sol[x] == 0);
-					sol[x]=1;
-				}
-				*v =0;
+				//int x=0;
+				//int num_verts_sol = random_l_h(0, d.numGenes-1);
+				//for(int j=0; j<d.numGenes; j++){
+				//	do{
+				//		x = random_l_h(0, d.numGenes-1);
+				//	}while(sol[x] == 0);
+				//	sol[x]=1;
+				//}
+				*v =1;
+				return best_fitness_found-1;
 			
 		} else {
 			*v = 1;
@@ -696,10 +703,10 @@ int solucaovalida(int *sol, int v, int * mat){
 // Avaliacao da popula��o
 // Par�metros de entrada: populacao (pop), estrutura com parametros (d) e matriz com dados do problema (mat)
 // Par�metros de sa�da: Preenche pop com os valores de fitness e de validade para cada solu��o
-void evaluate(pchrom pop, struct info d, int * mat)
+void evaluate(pchrom pop, struct info d, int * mat, float best_fitness_found)
 {
 	int i;
 
 	for (i=0; i<d.popsize; i++)
-		pop[i].fitness = eval_individual(pop[i].p, d, mat, &pop[i].valido);
+		pop[i].fitness = eval_individual(pop[i].p, d, mat, &pop[i].valido, best_fitness_found);
 }
