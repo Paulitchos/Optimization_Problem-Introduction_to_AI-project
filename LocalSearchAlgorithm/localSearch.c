@@ -86,10 +86,7 @@ int main(int argc, char *argv[]){
     // Preenche matriz de adjacencias
     sol = malloc(sizeof(int)*vert);
     best = malloc(sizeof(int)*vert);
-    if(sol == NULL || best == NULL){
-        printf("Erro na alocacao de memoria");
-        exit(1);
-    }
+    if(sol == NULL || best == NULL){ printf("Erro na alocacao de memoria"); exit(1);}
     for(k=0; k<runs; k++){
         // Gerar solucao inicial
         gera_sol_inicial(sol, vert, mat, prints);
