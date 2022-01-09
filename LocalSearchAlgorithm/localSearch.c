@@ -5,7 +5,7 @@
 #include <math.h>
 #include <time.h>
 
-#define DEFAULT_RUNS 10
+#define DEFAULT_RUNS 30
 #define PROB 0.01
 
 /*
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]){
         if (prints) escreve_sol(sol, vert); // ***
         if (prints) printf("Custo final: %2d\n", custo); // ***
         mbf += custo;
-        if(k==0 || best_custo > custo)
+        if(k==0 || best_custo < custo)
         {
             best_custo = custo;
             substitui(best, sol, vert);
@@ -481,8 +481,9 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
 /*
 int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
 {
-    int *nova_sol, custo, custo_viz, i; 
-    int *nova_sol2, custo_viz2;  // Vizinhança 2
+    int *nova_sol, custo, fit_viz, i; 
+    int *nova_sol2, fit_viz2;  // Vizinhança 2
+    int verifica = 0;
 
 	nova_sol = malloc(sizeof(int)*vert);
     nova_sol2 = malloc(sizeof(int)*vert); // Vizinhança 2
@@ -491,41 +492,51 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
         printf("Erro na alocacao de memoria");
         exit(1);
     }
+    if(nova_sol2 == NULL)
+    {
+        printf("Erro na alocacao de memoria");
+        exit(1);
+    }
 	// Avalia solucao inicial
-    custo = calcula_fit(sol, mat, vert); //fico a saber qual é o custo da minha solução atual
+    custo = calcula_fit(sol, mat, vert,custo); //fico a saber qual é o custo da minha solução atual
     // continuar, aceitar a melhor entre sol, nova sol e nova sol 2
     for(i=0; i<num_iter; i++)
     {
-		// Gera vizinho
-		gera_vizinho(sol, nova_sol, vert);
-        gera_vizinho(sol, nova_sol2, vert);
-		// Avalia vizinho
-		custo_viz = calcula_fit(nova_sol, mat, vert);
-        //custo_viz2 = calcula_fit(nova_sol2, mat, vert); // Vizinhança 2
-		// Aceita vizinho se o custo diminuir (problema de minimizacao)
-        // se o custo for menor, ent, aceito, substituo a solução atual pela nova
+        do {
+            gera_vizinho(sol, nova_sol, vert);
+            verifica = verifica_validade(nova_sol, mat, vert);
+            verifica = 1; // PENALIZAÇAO
+        }while(verifica==0);
 
-        if (custo_viz <= custo) {
+        verifica = 0;
+
+        do {
+            gera_vizinho(sol, nova_sol2, vert);
+            verifica = verifica_validade(nova_sol2, mat, vert);
+            verifica = 1; // PENALIZAÇAO
+        }while(verifica==0);
+
+        // Avalia vizinho
+        fit_viz= calcula_fit(nova_sol,mat,vert,custo);
+        fit_viz2= calcula_fit(nova_sol,mat,vert,custo);
+
+
+        if (fit_viz >= custo) {
             substitui(sol, nova_sol, vert);
-            custo=custo_viz;
-        } else { //solução pior tmb pode ser aceite
-            if (rand_01() < PROB) { //isto ajuda a fugir de máximos locais
-                substitui(sol, nova_sol, vert);
-                custo=custo_viz;
-            }
+            custo=fit_viz ;
         }
 
-        /* // Vizinhança 2
-        if(custo_viz <= custo_viz2) // mudado de < para <=
+         // Vizinhança 2
+        if(fit_viz  >= fit_viz2) // mudado de < para <=
         {
-            if (custo_viz < custo){
+            if (fit_viz  > custo){
                 substitui(sol, nova_sol, vert);
-                custo=custo_viz;
+                custo=fit_viz ;
             }
         } else { // viz 2 é melhor
-            if (custo_viz2 < custo){
+            if (fit_viz2 > custo){
                 substitui(sol, nova_sol2, vert);
-                custo=custo_viz2;
+                custo=fit_viz2;
             }
         }
         
@@ -535,6 +546,7 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
     return custo;
 }
 */
+
 /*  /$$$$$$$$ /$$   /$$ /$$   /$$  /$$$$$$   /$$$$$$   /$$$$$$ 
    | $$_____/| $$  | $$| $$$ | $$ /$$__  $$ /$$__  $$ /$$__  $$
    | $$      | $$  | $$| $$$$| $$| $$  \__/| $$  \ $$| $$  \ $$
