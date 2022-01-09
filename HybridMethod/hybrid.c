@@ -76,7 +76,7 @@ int verifica_validade_l(int *sol, int *mat,int vert);
 // ============= Local search functions ============= 
 // funcao
 void evaluate(pchrom pop, struct info d, int * mat);
-void gera_vizinho(int sol[], int nova_sol[], int vert);
+void gera_vizinho(int sol[], int nova_sol[], int vert,int * mat);
 
 void escreve_sol2(int *sol, int vert);
 // algoritmo
@@ -206,6 +206,7 @@ int main(int argc, char *argv[])
 	for (r=0; r<runs; r++)
 	{
         // Gera��o da popula��o inicial
+        pop = 
 		pop = init_pop(EA_param); // pop ficam com array de soluções (structs chrom), que dentro delas têm arrays de 1s e zeros aleatorios
 
         // Avalia a popula��o inicial
@@ -221,6 +222,7 @@ int main(int argc, char *argv[])
 
 		// Ciclo de optimiza��o
 		gen_actual = 1;
+        /*
         while (gen_actual <= EA_param.numGenerations)
 		{
 
@@ -238,6 +240,7 @@ int main(int argc, char *argv[])
 			//printf("validade:%d\n",pop->valido);
 
 		}
+        */
 
 
         vert = EA_param.numGenes;
@@ -247,6 +250,8 @@ int main(int argc, char *argv[])
         for(int z=0; z<EA_param.numGenes; z++){ //meter tudo a zeros no array sol de tamanho v(vértices)
             sol[z]=0;
             best[z]=0;
+            pop->p[z] = 0;
+            best_run.p[z] = 0;
         }
         if(sol == NULL || best == NULL){ printf("Erro na alocacao de memoria"); exit(1);}
         for (int z = 0; z<EA_param.numGenes; z++) {
@@ -286,10 +291,11 @@ int main(int argc, char *argv[])
         for(i_t=0; i_t<num_iter; i_t++)
         {
 
-            if (1/*i_t%2 == 0*/){
+            if (i_t%2 == 0){
 
+                //printf("making local\n");
                 do {
-                    gera_vizinho(sol, nova_sol_t, vert);
+                    gera_vizinho(sol, nova_sol_t, vert, mat);
                     verifica_t = verifica_validade_l(nova_sol_t, mat, vert);
                     //verifica = 1; // PENALIZAÇAO
                 }while(verifica_t==0);
@@ -301,8 +307,19 @@ int main(int argc, char *argv[])
                     custo_t = fit_viz_t;
                 }
 
+                // ========= tradução =========== //
+                for (int z = 0; z<EA_param.numGenes; z++) {
+                    pop->p[z] = sol[z];
+                }
+
+                for (int z = 0; z<EA_param.numGenes; z++) {
+                    best_run.p[z] = best[z];
+                }
+                // ========= tradução =========== //
+
             } else {
 
+                //printf("making evolutionary\n");
                 // Torneio bin�rio para encontrar os progenitores (ficam armazenados no vector parents)
                 tournament(pop, EA_param, parents); // parents fica com uma série de soluções um pouco melhores que as anteriores, vai haver soluções repetidas, vão se perder algumas das soluções piores
                 // Aplica os operadores gen�ticos aos pais (os descendentes ficam armazenados na estrutura pop)
@@ -312,6 +329,16 @@ int main(int argc, char *argv[])
                 // Actualiza a melhor solu��o encontrada
                 best_run = get_best(pop, EA_param, best_run);
                 
+
+                // ========= tradução =========== //
+                for (int z = 0; z<EA_param.numGenes; z++) {
+                    sol[z] = pop->p[z];
+                }
+
+                for (int z = 0; z<EA_param.numGenes; z++) {
+                    best[z] = best_run.p[z];
+                }
+                // ========= tradução =========== //
             }
 
         }
@@ -923,7 +950,7 @@ int tudoAZeros(int *sol, int v);
 // Gera um vizinho
 // Parametros: solucao actual, vizinho, numero de vertices
 //swap two vertices
-void gera_vizinho(int sol[], int nova_sol[], int vert)
+void gera_vizinho(int sol[], int nova_sol[], int vert, int * mat)
 {
     int i, p1, p2;
 
@@ -932,28 +959,38 @@ void gera_vizinho(int sol[], int nova_sol[], int vert)
 
 	// Encontra posicao com valor 0
     //if (random_l_h(0,1) == 1 ){
-    if (flip()==1){ 
-        if (tudoAUns(sol, vert) == 0){
-            do
-                p1=random_l_h(0, vert-1);
-            while(nova_sol[p1] != 0);
+
+
+
+        if (flip()==1){ 
+            if (tudoAUns(sol, vert) == 0){
+                do
+                    p1=random_l_h(0, vert-1);
+                while(nova_sol[p1] != 0);
+            }
+            nova_sol[p1] = 1;
         }
-        nova_sol[p1] = 1;
-    }
+
    
         
     //}
 
 	// Encontra posicao com valor 1
-    if (flip()==1){ 
-        if (tudoAZeros(sol,vert) == 0){
-            do
-                p2=random_l_h(0, vert-1);
-            while(nova_sol[p2] != 1);
+    if (tudoAZeros(sol,vert) == 0){
+    do {
+        if (flip()==1){ 
+            if (tudoAZeros(sol,vert) == 0){
+                do{
+                    if (tudoAZeros(nova_sol,vert) == 1) break;
+                    p2=random_l_h(0, vert-1);
+                }while(nova_sol[p2] != 1);
+            }
+            nova_sol[p2] = 0;
         }
-        nova_sol[p2] = 0;
-    }
+
+    }while(verifica_validade_l(nova_sol, mat, vert) == 0);
 	// Troca
+    }
     
     
 }
@@ -997,7 +1034,7 @@ int esferiamento(int sol[], int *mat, int vert, int num_iter, int prints) { // t
         temp -= (max-min) / (float)num_iter; // Descer temperatura
         // Gera vizinho
         do {
-            gera_vizinho(sol, nova_sol, vert);
+            gera_vizinho(sol, nova_sol, vert, mat);
         } while (solucaovalida(nova_sol, vert, mat) == 0);
 		
 		// Avalia vizinho
@@ -1077,7 +1114,7 @@ int trepa_colinas(int sol_t[], int *mat_t, int vert_t, int num_iter_t)
     for(i_t=0; i_t<num_iter_t; i_t++)
     {
         do {
-            gera_vizinho(sol_t, nova_sol_t, vert_t);
+            gera_vizinho(sol_t, nova_sol_t, vert_t, mat_t);
             verifica_t = verifica_validade_l(nova_sol_t, mat_t, vert_t);
             //verifica = 1; // PENALIZAÇAO
         }while(verifica_t==0);
