@@ -268,7 +268,7 @@ int * read_file(char *filename, struct info * pEA_param )
 	pEA_param->pm = 0.01; //fscanf(f, " pm: %f", &x.pm);
 	pEA_param->pr = 0.7; //fscanf(f, " pr: %f", &x.pr);
 	pEA_param->tsize = 2; //fscanf(f, " tsize: %d", &x.tsize);
-	pEA_param->numGenerations = 700;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
+	pEA_param->numGenerations = 1000;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
 	//x.capacity = 250;//fscanf(f, " cap: %d", &x.capacity);
 	pEA_param->ro = 0.0;
 	if (pEA_param->numGenes > MAX_OBJ){printf("Number of itens is superior to MAX_OBJ\n");exit(1);}

@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
 	for (r=0; r<runs; r++)
 	{
         // Gera��o da popula��o inicial
-        pop = 
+
 		pop = init_pop(EA_param); // pop ficam com array de soluções (structs chrom), que dentro delas têm arrays de 1s e zeros aleatorios
 
         // Avalia a popula��o inicial
@@ -444,7 +444,7 @@ void init_rand()
 int * read_file(char *filename, struct info * pEA_param )
 {
 	
-	pEA_param->popsize = 100; //fscanf(f, " pop: %d", &x.popsize);
+	pEA_param->popsize = 200; //fscanf(f, " pop: %d", &x.popsize);
 	pEA_param->pm = 0.01; //fscanf(f, " pm: %f", &x.pm);
 	pEA_param->pr = 0.7; //fscanf(f, " pr: %f", &x.pr);
 	pEA_param->tsize = 2; //fscanf(f, " tsize: %d", &x.tsize);
