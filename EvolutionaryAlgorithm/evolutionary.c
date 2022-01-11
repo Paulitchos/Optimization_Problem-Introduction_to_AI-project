@@ -628,6 +628,21 @@ int verifica_validade(int *sol, int *mat,struct info d) {
 // Par�metros de entrada: solu��o (sol), capacidade da mochila (d), matriz com dados do problema (mat) e numero de objectos (v)
 // Par�metros de sa�da: qualidade da solu��o (se a capacidade for excedida devolve 0)
 
+int num_arestas_sol(int *sol, int v, int * mat){
+	int num_arestas;
+	int i=0, j=0;
+    for(i=0; i<v; i++)
+		if(sol[i]==1)
+		{
+			for(j=0; j<v;j++)
+				if(sol[j]==1 && mat[i*v+j]==1){
+				    //printf(" sol inval ");
+                    num_arestas++; 
+                }
+		}
+	return num_arestas;
+}
+
 float eval_individual(int sol[], struct info d, int *mat, int *v, float best_fitness_found){
 	int     i, min;
 	float   ro;
@@ -652,8 +667,10 @@ float eval_individual(int sol[], struct info d, int *mat, int *v, float best_fit
 				//	}while(sol[x] == 0);
 				//	sol[x]=1;
 				//}
+				int fit = calcula_fit(sol,mat,d.numGenes);
+				int num_arestas_mal = num_arestas_sol(sol,d.numGenes,mat);
 				*v =1;
-				return best_fitness_found-1;
+				return fit - num_arestas_mal - 1;
 			
 		} else {
 			*v = 1;

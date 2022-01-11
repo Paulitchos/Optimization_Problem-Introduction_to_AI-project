@@ -11,6 +11,8 @@
 
 #define PRINT_0_1 0
 
+// evolutivo com  Penalização
+
 int global = 0;
 
 // EStrutura para armazenar parametros
@@ -405,7 +407,7 @@ int main(int argc, char *argv[])
     free(sol);
     free(best);
 	// Escreve resultados globais
-	printf("\n\nMBF(mean best fitness): %f\n", mbf/r); 
+	printf("\n\nMBF(mean best fitness): %f\n", mbf/(r*2)); 
 	printf("\nMelhor solucao encontrada");
 	printf("\nvalida?: %d\n",best_ever.valido);
 	write_best(best_ever, EA_param);
@@ -746,6 +748,21 @@ int verifica_validade(int *sol, int *mat,struct info d) {
 // Par�metros de entrada: solu��o (sol), capacidade da mochila (d), matriz com dados do problema (mat) e numero de objectos (v)
 // Par�metros de sa�da: qualidade da solu��o (se a capacidade for excedida devolve 0)
 
+int num_arestas_sol(int *sol, int v, int * mat){
+	int num_arestas;
+	int i=0, j=0;
+    for(i=0; i<v; i++)
+		if(sol[i]==1)
+		{
+			for(j=0; j<v;j++)
+				if(sol[j]==1 && mat[i*v+j]==1){
+				    //printf(" sol inval ");
+                    num_arestas++; 
+                }
+		}
+	return num_arestas;
+}
+
 float eval_individual(int sol[], struct info d, int *mat, int *v){
 	int     i, min;
 	float   ro;
@@ -761,7 +778,7 @@ float eval_individual(int sol[], struct info d, int *mat, int *v){
 					min = i;
 			sol[min] = 0; // retirá-lo
 			*/
-			
+			/*
 				int x=0;
 				int num_verts_sol = random_l_h(0, d.numGenes-1);
 				for(int j=0; j<d.numGenes; j++){
@@ -771,6 +788,11 @@ float eval_individual(int sol[], struct info d, int *mat, int *v){
 					sol[x]=1;
 				}
 				*v =0;
+*/
+                int fit = calcula_fit(sol,mat,d.numGenes);
+				int num_arestas_mal = num_arestas_sol(sol,d.numGenes,mat);
+				*v =1;
+				return fit - num_arestas_mal - 1;
 			
 		} else {
 			*v = 1;
