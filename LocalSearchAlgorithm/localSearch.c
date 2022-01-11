@@ -556,6 +556,21 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
    | $$      |  $$$$$$/| $$ \  $$|  $$$$$$/| $$  | $$|  $$$$$$/
    |__/       \______/ |__/  \__/ \______/ |__/  |__/ \______/  */
 
+int num_arestas_sol(int *sol, int v, int * mat){
+	int num_arestas;
+	int i=0, j=0;
+    for(i=0; i<v; i++)
+		if(sol[i]==1)
+		{
+			for(j=0; j<v;j++)
+				if(sol[j]==1 && mat[i*v+j]==1){
+				    //printf(" sol inval ");
+                    num_arestas++; 
+                }
+		}
+	return num_arestas;
+}
+
 int calcula_fit(int sol[], int *mat, int vert, int fit_antigo) // mat é uma tabela de dimensões vert*vert
 {
     // calcula o custo: 
@@ -567,16 +582,16 @@ int calcula_fit(int sol[], int *mat, int vert, int fit_antigo) // mat é uma tab
 	int custo=0;
 	int i, j;
 
-    if (verifica_validade(sol, mat, vert) == 0){ // PENALIZAÇÃO
-        return penalizacao(sol, mat, vert, fit_antigo); // se a nova é invalida tira-lhe fit
-    }
-
 
     //syntax for mat[l][c] will be mat[l*sizeY+c]
 
     for(i=0; i<vert; i++)
 		if(sol[i]==1)
 			custo++;
+
+    if (verifica_validade(sol, mat, vert) == 0){ // PENALIZAÇÃO
+        custo = custo - num_arestas_sol(sol, vert, mat) - 1;
+    }
 
 	return custo;
 }  

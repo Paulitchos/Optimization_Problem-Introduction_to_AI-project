@@ -12,6 +12,11 @@
 #define PRINT_0_1 0
 
 // evolutivo com  Penalização
+// Para fazer o hibrido podes so meter no evolutivo no inicio fazeres  pop = init(EA_param);
+//e chamar o trepa colinas asseguir para otimizar cada um deles trepacolinas()
+
+//ou então primeiro corres o genético e depois corres o trepaColinas
+
 
 int global = 0;
 
