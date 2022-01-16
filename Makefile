@@ -9,3 +9,6 @@ localsearch:
 
 hybrid:
 	gcc ./HybridMethod/hybrid.c -o ./dist/hybrid -lm && ./dist/hybrid
+	
+simplehybrid:
+	gcc ./HybridMethod/hhybrid_mais_facil.c -o ./dist/hybrid -lm && ./dist/hybrid

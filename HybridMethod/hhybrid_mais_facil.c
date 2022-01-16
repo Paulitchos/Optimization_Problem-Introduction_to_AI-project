@@ -7,6 +7,16 @@
 
 #define DEFAULT_RUNS	10
 #define MAX_OBJ 1000
+#define PROB 0.01
+
+#define PRINT_0_1 0
+
+// evolutivo com  Penalização
+// Para fazer o hibrido podes so meter no evolutivo no inicio fazeres  pop = init(EA_param);
+//e chamar o trepa colinas asseguir para otimizar cada um deles trepacolinas()
+
+//ou então primeiro corres o genético e depois corres o trepaColinas
+
 
 int global = 0;
 
@@ -61,11 +71,36 @@ void init_rand();
 int random_l_h(int min, int max);
 float rand_01();
 int flip();
-float eval_individual(int sol[], struct info d, int *mat, int *v, float best_fitness_found);
+
+int solucaovalida(int *sol, int v, int * mat);
+int calcula_fit(int sol[], int *mat, int vert);
+int verifica_validade(int *sol, int *mat,struct info d);
+int verifica_validade_l(int *sol, int *mat,int vert);
 
 
+
+
+// ============= Local search functions ============= 
 // funcao
-void evaluate(pchrom pop, struct info d, int * mat, float best_fitness_found);
+void evaluate(pchrom pop, struct info d, int * mat);
+void gera_vizinho(int sol[], int nova_sol[], int vert,int * mat);
+
+void escreve_sol2(int *sol, int vert);
+// algoritmo
+int trepa_colinas(int sol[], int *mat, int vert, int num_iter);
+int trepa_colinas2vizinhanças(int sol[], int *mat, int vert, int num_iter);
+int esferiamento(int sol[], int *mat, int vert, int num_iter, int print);
+
+// utils
+void gera_sol_inicial(int *sol, int v, int * mat, int prints);
+void escreve_sol(int *sol, int vert);
+void substitui(int a[], int b[], int n);
+void init_rand(void);
+int random_l_h(int min, int max);
+float rand_01(void);
+void printsol(int * sol, int vert);
+int penalizacao(int *sol, int *mat,int vert, int fit_antigo);
+
 
 
 /*
@@ -130,6 +165,7 @@ int main(int argc, char *argv[])
 	chrom       best_run, best_ever;
 	int         gen_actual, r, runs, i, inv, *mat;
 	float       mbf = 0.0;
+    int custo, best_custo = 0 ;
 
     // L� os argumentos de entrada
 	if (argc == 3)
@@ -165,19 +201,24 @@ int main(int argc, char *argv[])
 	init_rand();
     // Preenche a matriz com dados dos objectos (peso e valor) e a estrutura EA_param que foram definidos no ficheiro de input
 	mat = read_file(nome_fich,&EA_param);
+    int half_the_iterations = EA_param.numGenerations;
+    int prints = PRINT_0_1;
 	// Faz um ciclo com o n�mero de execu��es definidas
 
-	float best_fitness_found = 0;
+    // local algorthm
+    int vert;
+    int num_iter;
+    int * sol;
+    int * best;
 
 	for (r=0; r<runs; r++)
 	{
         // Gera��o da popula��o inicial
+
 		pop = init_pop(EA_param); // pop ficam com array de soluções (structs chrom), que dentro delas têm arrays de 1s e zeros aleatorios
 
-		//trepa_colinas();
-
         // Avalia a popula��o inicial
-		evaluate(pop, EA_param, mat,  best_fitness_found); // mat tem os dados direitinhos do ficheiro de texto
+		evaluate(pop, EA_param, mat); // mat tem os dados direitinhos do ficheiro de texto
 
 		// Como ainda n�o existe, escolhe-se como melhor solu��o a primeira da popula��o (poderia ser outra qualquer)
 		best_run = pop[0];
@@ -187,36 +228,120 @@ int main(int argc, char *argv[])
 		parents = malloc(sizeof(chrom)*EA_param.popsize);
 		if (parents==NULL){printf("Erro na alocacao de memoria\n");exit(1);}
 
-		
 		// Ciclo de optimiza��o
 		gen_actual = 1;
-		while (gen_actual <= EA_param.numGenerations)
-		{
-            // Torneio bin�rio para encontrar os progenitores (ficam armazenados no vector parents)
-			tournament(pop, EA_param, parents); // parents fica com uma série de soluções um pouco melhores que as anteriores, vai haver soluções repetidas, vão se perder algumas das soluções piores
-            // Aplica os operadores gen�ticos aos pais (os descendentes ficam armazenados na estrutura pop)
-			genetic_operators(parents, EA_param, pop); // pop fica com o crossover dos parents e da propria pop, e é aplicada mutação à pop
-            // Avalia a nova popula��o (a dos filhos)
-			evaluate(pop, EA_param, mat, best_run.fitness); // calcula se é válida e o fitness de cada solução
-            // Actualiza a melhor solu��o encontrada
-			best_run = get_best(pop, EA_param, best_run);
-			gen_actual++;
 
-		//	write_best(*pop, EA_param);
-		//	printf("validade:%d\n",pop->valido);
 
-			//global ++;
-			//if (global == 20) exit (0);
-			//for (int l=0; l<EA_param.popsize; l++) {
-			//	printsol(pop[l].p, EA_param.numGenes);
-			//	putchar('\n');
-			//}
-			//printf("\n=========================\n");
+        vert = EA_param.numGenes;
+        num_iter = EA_param.numGenerations;
+        sol = malloc(sizeof(int)*EA_param.numGenes);
+        best = malloc(sizeof(int)*EA_param.numGenes);
+        for(int z=0; z<EA_param.numGenes; z++){ //meter tudo a zeros no array sol de tamanho v(vértices)
+            sol[z]=0;
+            best[z]=0;
+            pop->p[z] = 0;
+            best_run.p[z] = 0;
+        }
+        if(sol == NULL || best == NULL){ printf("Erro na alocacao de memoria"); exit(1);}
+        for (int z = 0; z<EA_param.numGenes; z++) {
+            sol[z] = pop->p[z];
+        }
 
-			//printsol(best_run.p, EA_param.numGenes);
-			//printf("\n=========================\n");
+        for (int z = 0; z<EA_param.numGenes; z++) {
+            best[z] = best_run.p[z];
+        }
 
-		}
+        // Gerar solucao inicial
+        
+        gera_sol_inicial(sol, vert, mat, prints);
+        if (prints) escreve_sol(sol, vert); // ***
+        // Trepa colinas
+        //custo = trepa_colinas(sol, grafo, vert, num_iter);
+
+        // ============================ TREPA COLINAS ========================== //
+        int *nova_sol_t, custo_t=0, fit_viz_t, i_t;
+        int verifica_t=0;
+        //matriz para a nova solucao
+        nova_sol_t = malloc(sizeof(int)*vert);
+        if(nova_sol_t == NULL){ printf("Erro na alocacao de memoria"); exit(1);}
+        //------------------------------------------//
+
+        // Avalia solucao inicial
+        custo_t= calcula_fit(sol,mat,vert);
+        //-------------------------------------//
+
+        for(i_t=0; i_t<num_iter; i_t++)
+        {
+
+            if (i_t > (num_iter/2)){
+
+                //printf("making local\n");
+                do {
+                    gera_vizinho(sol, nova_sol_t, vert, mat);
+                    verifica_t = verifica_validade_l(nova_sol_t, mat, vert);
+                    //verifica = 1; // PENALIZAÇAO
+                }while(verifica_t==0);
+                // Avalia vizinho
+                fit_viz_t= calcula_fit(nova_sol_t,mat,vert);
+
+                if(fit_viz_t >= custo_t){ // PARA ACEITAR SOLUÇÕES DE CUSTO IGUAL OU NAO
+                    substitui(sol, nova_sol_t, vert);
+                    custo_t = fit_viz_t;
+                }
+
+                // ========= tradução =========== //
+                for (int z = 0; z<EA_param.numGenes; z++) {
+                    pop->p[z] = sol[z];
+                }
+
+                for (int z = 0; z<EA_param.numGenes; z++) {
+                    best_run.p[z] = best[z];
+                }
+                // ========= tradução =========== //
+
+            } else {
+
+                //printf("making evolutionary\n");
+                // Torneio bin�rio para encontrar os progenitores (ficam armazenados no vector parents)
+                tournament(pop, EA_param, parents); // parents fica com uma série de soluções um pouco melhores que as anteriores, vai haver soluções repetidas, vão se perder algumas das soluções piores
+                // Aplica os operadores gen�ticos aos pais (os descendentes ficam armazenados na estrutura pop)
+                genetic_operators(parents, EA_param, pop); // pop fica com o crossover dos parents e da propria pop, e é aplicada mutação à pop
+                // Avalia a nova popula��o (a dos filhos)
+                evaluate(pop, EA_param, mat); // calcula se é válida e o fitness de cada solução
+                // Actualiza a melhor solu��o encontrada
+                best_run = get_best(pop, EA_param, best_run);
+                
+
+                // ========= tradução =========== //
+                for (int z = 0; z<EA_param.numGenes; z++) {
+                    sol[z] = pop->p[z];
+                }
+
+                for (int z = 0; z<EA_param.numGenes; z++) {
+                    best[z] = best_run.p[z];
+                }
+                // ========= tradução =========== //
+            }
+
+        }
+        free(nova_sol_t);
+
+        custo = custo_t;
+
+        // ============================ TREPA COLINAS ========================== //
+
+        //custo = trepa_colinas(sol, mat, vert, num_iter);
+        // Escreve resultados da repeticao k
+        printf("\nRepeticao %d:", r); // ***
+        if (prints) escreve_sol(sol, vert); // ***
+        if (prints) printf("Custo final: %2d\n", custo); // ***
+        mbf += custo;
+        if(r==0 || best_custo > custo)
+        {
+            best_custo = custo;
+            substitui(best, sol, vert);
+        }
+
 		// Contagem das solu��es inv�lidas
 		for (inv=0, i=0; i<EA_param.popsize; i++)
 			if (pop[i].valido == 0){
@@ -226,9 +351,9 @@ int main(int argc, char *argv[])
 				//printf("sol %d VALIDA\n", i);
 			}
 		// Escreve resultados da repeti��o que terminou
-		printf("\nRepeticao %d:", r);
-		write_best(best_run, EA_param);
-		printf("\nPercentagem Invalidos: %f\n", 100*(float)inv/EA_param.popsize);
+		//printf("\nRepeticao %d:", r);
+		//write_best(best_run, EA_param);
+		//printf("\nPercentagem Invalidos: %f\n", 100*(float)inv/EA_param.popsize);
 		mbf += best_run.fitness;
 		if (r==0 || best_run.fitness > best_ever.fitness)
 			best_ever = best_run;
@@ -236,11 +361,15 @@ int main(int argc, char *argv[])
 		free(parents);
 		free(pop);
 	}
+    free(mat);
+    free(sol);
+    free(best);
 	// Escreve resultados globais
-	printf("\n\nMBF(mean best fitness): %f\n", mbf/r); 
+	printf("\n\nMBF(mean best fitness): %f\n", mbf/(r*2)); 
 	printf("\nMelhor solucao encontrada");
 	printf("\nvalida?: %d\n",best_ever.valido);
 	write_best(best_ever, EA_param);
+
 	return 0;
 }
 
@@ -266,11 +395,11 @@ void init_rand()
 int * read_file(char *filename, struct info * pEA_param )
 {
 	
-	pEA_param->popsize = 200; //fscanf(f, " pop: %d", &x.popsize);
+	pEA_param->popsize = 100; //fscanf(f, " pop: %d", &x.popsize);
 	pEA_param->pm = 0.01; //fscanf(f, " pm: %f", &x.pm);
 	pEA_param->pr = 0.7; //fscanf(f, " pr: %f", &x.pr);
 	pEA_param->tsize = 2; //fscanf(f, " tsize: %d", &x.tsize);
-	pEA_param->numGenerations = 1000;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
+	pEA_param->numGenerations = 2500;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
 	//x.capacity = 250;//fscanf(f, " cap: %d", &x.capacity);
 	pEA_param->ro = 0.0;
 	if (pEA_param->numGenes > MAX_OBJ){printf("Number of itens is superior to MAX_OBJ\n");exit(1);}
@@ -280,11 +409,6 @@ int * read_file(char *filename, struct info * pEA_param )
 	int i, j;
     int c;
 	int arestas;
-
-	// Numero de iteracoes
-	//printf("Escolha o numero de iteracoes: ");
-    //scanf("%d",num_iter);
-	//while ((c = getchar()) != '\n' && c != EOF) { }
 
 	f=fopen(filename, "rt");
 	if(!f) { printf("Erro no acesso ao ficheiro dos dados\n"); exit(1); }
@@ -328,48 +452,7 @@ int * read_file(char *filename, struct info * pEA_param )
     }
 
 	return p;
-	/* Leitura dos dados do KSP (peso e lucro)
-	for (i=0; i<x.numGenes; i++){
-		fscanf(f, " e %d %d", &mat[i][0], &mat[i][1]);
-		printf("======================x.numGenes = %d %d\n",mat[i][0], mat[i][1]);
-	}
-	fclose(f);
-	// Devolve a estrutura com os par�metros
-	return x; */
 
-	/*
-		struct  info x;
-	FILE    *f;
-	int     i;
-
-	f = fopen(filename, "rt");
-	if (!f)
-	{
-		printf("File not found\n");
-		exit(1);
-	}
-	// Leitura dos par�metros do problema
-	fscanf(f, " pop: %d", &x.popsize);
-	fscanf(f, " pm: %f", &x.pm);
-	fscanf(f, " pr: %f", &x.pr);
-	fscanf(f, " tsize: %d", &x.tsize);
-	fscanf(f, " max_gen: %d", &x.numGenerations);
-	fscanf(f, " obj: %d", &x.numGenes);
-	fscanf(f, " cap: %d", &x.capacity);
-	if (x.numGenes > MAX_OBJ)
-	{
-		printf("Number of itens is superior to MAX_OBJ\n");
-		exit(1);
-	}
-	x.ro = 0.0;
-	// Leitura dos dados do KSP (peso e lucro)
-	fscanf(f, " Weight Profit");
-	for (i=0; i<x.numGenes; i++)
-		fscanf(f, " %d %d", &mat[i][0], &mat[i][1]);
-	fclose(f);
-	// Devolve a estrutura com os par�metros
-	return x;
-	*/
 }
 
 // Simula o lan�amento de uma moeda, retornando o valor 0 ou 1
@@ -411,25 +494,7 @@ pchrom init_pop(struct info d)
 				indiv[i].p[x]=1;
 			}
 		}
-            
-/*
-        int num_verts_sol = random_l_h(0, v-1);
-        for(i=0; i<num_verts_sol; i++){
-            // mete aleatoriamente um dos indexs que estão a zero a um
-            do
-                x = random_l_h(0, v-1);
-            while(sol[x] != 0);
-            sol[x]=1;
-        }
-*/
-/*
-	for (i=0; i<d.popsize; i++)
-	{
-		for (j=0; j<d.numGenes; j++){ // numGenes = Número de vertices máximos da sol
-			indiv[i].p[j] = flip();
-		}
-	}
-	*/
+
 	return indiv;
 }
 
@@ -508,37 +573,17 @@ void tournament(pchrom pop, struct info d, pchrom parents){
 	}
 }
 
+void fix(pchrom pop){
+
+}
+
 // Operadores geneticos a usar na gera��o dos filhos
 // Par�metros de entrada: estrutura com os pais (parents), estrutura com par�metros (d), estrutura que guardar� os descendentes (offspring)
 void genetic_operators(pchrom parents, struct info d, pchrom pop)
 {
-/*			printf("before crossover\n");
-			for (int l=0; l<d.popsize; l++) {
-				printsol(pop[l].p, d.numGenes);
-				//putchar('\n');
-			}
-			printf("\n=========================\n");
-*/    // Recombina��o com um ponto de corte
 	crossover(parents, d, pop); // quando sucesso na probabilidade de recombinação, pop fica com metade dos bits do parent e mantém metade dos seus
-/*			printf("after crossover\n");
-			for (int l=0; l<d.popsize; l++) {
-				printsol(pop[l].p, d.numGenes);
-				//putchar('\n');
-			}
-			printf("\n=========================\n");
-*/	// Muta��o bin�ria
 	mutation(pop, d); // para cada bit de cada solução vê atravéz da probabilidade de mutação se lhe dá flip
-	/*
-			printf("after mutation\n");
-			for (int l=0; l<d.popsize; l++) {
-				printsol(pop[l].p, d.numGenes);
-				//putchar('\n');
-			}
-			printf("\n=========================\n");
-*/
-			//static int i;
-			//i++;
-			//if (i==10) exit(0);
+    fix(pop);
 }
 
 // Preenche o vector descendentes com o resultado das opera��es de recombina��o
@@ -573,12 +618,36 @@ void crossover(pchrom parents, struct info d, pchrom offspring)
 // Par�metros de entrada: estrutura com os descendentes (offspring) e estrutura com par�metros (d)
 void mutation(pchrom offspring, struct info d)
 {
-	int i, j;
 
-	for (i=0; i<d.popsize; i++)
-		for (j=0; j<d.numGenes; j++)
-			if (rand_01() < d.pm)
-				offspring[i].p[j] = !(offspring[i].p[j]);
+    int i, j, g1, g2, p1, count;
+
+	for (i = 0; i < d.popsize; i++) {
+		if (rand_01() < d.pm) { // Mutar individuo
+			
+			do { // Garantir que o grupo escolhido tem pelo menos um elemento
+				count = 0; 
+				g1 = random_l_h(0, d.numGenes-1);
+
+				for (j = 0; j < d.numGenes; j++) {
+					if (offspring[i].p[j] == g1) {
+						count++;
+						break;
+					}
+				}
+			} while (count == 0);
+
+            do
+                g2 = random_l_h(0, d.numGenes-1);
+            while (g2 == g1);
+
+            do
+				p1 = random_l_h(0, d.numGenes-1);
+			while (offspring[i].p[p1] != g1);
+
+            offspring[i].p[p1] = g2;
+            if (offspring[i].p[p1] != 0) offspring[i].p[p1] = 1;
+        }
+	}  
 }
 
 
@@ -591,45 +660,9 @@ void mutation(pchrom offspring, struct info d)
    | $$      |  $$$$$$/| $$ \  $$|  $$$$$$/| $$  | $$|  $$$$$$/
    |__/       \______/ |__/  \__/ \______/ |__/  |__/ \______/  */
 
-int solucaovalida(int *sol, int v, int * mat);
-int calcula_fit(int sol[], int *mat, int vert);
-int verifica_validade(int *sol, int *mat,struct info d);
-
-/* CERQUEIRA
-float eval_individual(int sol[], struct info d, int *mat, int *v){
-	int total=0;
-    int i ,verifica;
-    verifica=verifica_validade(sol, mat,d);
-    if(verifica==0) {
-        *v=0;
-        return 0;
-    }else{
-    	for(i=0;i<d.numGenes;i++){
-        	if(sol[i]==1)
-            	total++;
-    		}
-    	*v=1;
-    	return total;
-	}
-}
-
-int verifica_validade(int *sol, int *mat,struct info d) {
-    int i = 0, j = 0;
-    for (i = 0; i < d.numGenes; i++)
-        if (sol[i] == 1) {
-            for (j = 0; j < d.numGenes; j++)
-                if (sol[j] == 1 && mat[i * d.numGenes + j] == 1) {
-                    return 0;
-                }
-        }
-    return 1;
-}
-*/
-
 // Calcula a qualidade de uma solu��o
 // Par�metros de entrada: solu��o (sol), capacidade da mochila (d), matriz com dados do problema (mat) e numero de objectos (v)
 // Par�metros de sa�da: qualidade da solu��o (se a capacidade for excedida devolve 0)
-
 int num_arestas_sol(int *sol, int v, int * mat){
 	int num_arestas;
 	int i=0, j=0;
@@ -645,42 +678,26 @@ int num_arestas_sol(int *sol, int v, int * mat){
 	return num_arestas;
 }
 
-float eval_individual(int sol[], struct info d, int *mat, int *v, float best_fitness_found){
+float eval_individual(int sol[], struct info d, int *mat, int *v){
 	int     i, min;
 	float   ro;
 
-		if (solucaovalida(sol, d.numGenes, mat) == 0) { // solução inválida
-			//*v = 0;
-			/*
-			for (i=0; sol[i] == 0 && i<d.numGenes; i++) // Procurar primeiro objeto na mochila
-				; 
-			min = i;
-			for (; i<d.numGenes; i++) // Procura objeto menos valioso na mochila
-				if(sol[i]==1 && mat[i][1] < mat[min][1])
-					min = i;
-			sol[min] = 0; // retirá-lo
-			*/
-			
-				//int x=0;
-				//int num_verts_sol = random_l_h(0, d.numGenes-1);
-				//for(int j=0; j<d.numGenes; j++){
-				//	do{
-				//		x = random_l_h(0, d.numGenes-1);
-				//	}while(sol[x] == 0);
-				//	sol[x]=1;
-				//}
+		if (solucaovalida(sol, d.numGenes, mat) == 0) { // solução inválida			
 				int fit = calcula_fit(sol,mat,d.numGenes);
 				int num_arestas_mal = num_arestas_sol(sol,d.numGenes,mat);
-				*v =1;
-				return fit - num_arestas_mal - 1;
+				*v =0;
+				if ( fit <= num_arestas_mal) {
+					fit = 0;
+					return fit;
+				}
+				return fit  - num_arestas_mal;
 			
 		} else {
 			*v = 1;
 		}
 
 	int fit = calcula_fit(sol,mat,d.numGenes);
-	if (*v == 0 ) fit = 0;
-	// v é a validade da solução (0 - inválido, 1 - válido)
+	
 	return fit;
 }
 
@@ -694,8 +711,6 @@ int calcula_fit(int sol[], int *mat, int vert) // mat é uma tabela de dimensõe
     */
 	int qualidade=0;
 	int i, j;
-
-    //syntax for mat[l][c] will be mat[l*sizeY+c]
 
     for(i=0; i<vert; i++)
 		if(sol[i]==1)
@@ -722,10 +737,226 @@ int solucaovalida(int *sol, int v, int * mat){
 // Avaliacao da popula��o
 // Par�metros de entrada: populacao (pop), estrutura com parametros (d) e matriz com dados do problema (mat)
 // Par�metros de sa�da: Preenche pop com os valores de fitness e de validade para cada solu��o
-void evaluate(pchrom pop, struct info d, int * mat, float best_fitness_found)
+void evaluate(pchrom pop, struct info d, int * mat)
 {
 	int i;
 
 	for (i=0; i<d.popsize; i++)
-		pop[i].fitness = eval_individual(pop[i].p, d, mat, &pop[i].valido, best_fitness_found);
+		pop[i].fitness = eval_individual(pop[i].p, d, mat, &pop[i].valido);
+}
+
+ //============================ ====================================================================================
+/*
+ $$        /$$$$$$   /$$$$$$   /$$$$$$  /$$      
+| $$       /$$__  $$ /$$__  $$ /$$__  $$| $$      
+| $$      | $$  \ $$| $$  \__/| $$  \ $$| $$      
+| $$      | $$  | $$| $$      | $$$$$$$$| $$      
+| $$      | $$  | $$| $$      | $$__  $$| $$      
+| $$      | $$  | $$| $$    $$| $$  | $$| $$      
+| $$$$$$$$|  $$$$$$/|  $$$$$$/| $$  | $$| $$$$$$$$
+|________/ \______/  \______/ |__/  |__/|________/
+*/      
+//============================ ====================================================================================
+                                            
+
+/*  /$$   /$$ /$$$$$$$$ /$$$$$$ /$$        /$$$$$$ 
+   | $$  | $$|__  $$__/|_  $$_/| $$       /$$__  $$
+   | $$  | $$   | $$     | $$  | $$      | $$  \__/
+   | $$  | $$   | $$     | $$  | $$      |  $$$$$$ 
+   | $$  | $$   | $$     | $$  | $$       \____  $$
+   | $$  | $$   | $$     | $$  | $$       /$$  \ $$
+   |  $$$$$$/   | $$    /$$$$$$| $$$$$$$$|  $$$$$$/
+    \______/    |__/   |______/|________/ \______/  */
+
+
+// Leitura do ficheiro de input
+// Recebe: nome do ficheiro, numero de vertices (ptr), numero de iteracoes (ptr)
+// Devolve a matriz de adjacencias
+
+// Gera a solucao inicial
+// Parametros: solucao, numero de vertices
+void gera_sol_inicial(int *sol, int v, int * mat, int prints){
+
+    int i, x;
+
+    do {
+
+        for(i=0; i<v; i++) //meter tudo a zeros no array sol de tamanho v(vértices)
+            sol[i]=0;
+
+        int num_verts_sol = random_l_h(0, v-1);
+        for(i=0; i<num_verts_sol; i++){
+            // mete aleatoriamente um dos indexs que estão a zero a um
+            do
+                x = random_l_h(0, v-1);
+            while(sol[x] != 0);
+            sol[x]=1;
+        }
+    
+    } while (solucaovalida(sol, v, mat) == 0);
+
+}
+
+// Escreve solucao
+// Parametros: solucao e numero de vertices
+void escreve_sol(int *sol, int vert)
+{
+	int i;
+
+	printf("\nVertices que nao pertecem a sol: ");
+	for(i=0; i<vert; i++)
+		if(sol[i]==0)
+			printf("%2d  ", i+1);
+	printf("\nVertices que pertecem a sol: ");
+	for(i=0; i<vert; i++)
+		if(sol[i]==1)
+			printf("%2d  ", i+1);
+	printf("\n");
+}
+
+void escreve_sol2(int *sol, int vert)
+{
+    int i;
+
+    for(i=0;i<vert;i++) {
+        printf(" %d |", sol[i]);
+    }
+    printf("\n\n\n");
+}
+
+// copia vector b para a (tamanho n)
+void substitui(int a[], int b[], int n)
+{
+    int i;
+    for(i=0; i<n; i++)
+        a[i]=b[i];
+}
+
+
+/*   /$$$$$$  /$$        /$$$$$$   /$$$$$$  /$$$$$$$  /$$$$$$ /$$$$$$$$ /$$      /$$  /$$$$$$ 
+    /$$__  $$| $$       /$$__  $$ /$$__  $$| $$__  $$|_  $$_/|__  $$__/| $$$    /$$$ /$$__  $$
+   | $$  \ $$| $$      | $$  \__/| $$  \ $$| $$  \ $$  | $$     | $$   | $$$$  /$$$$| $$  \ $$
+   | $$$$$$$$| $$      | $$ /$$$$| $$  | $$| $$$$$$$/  | $$     | $$   | $$ $$/$$ $$| $$  | $$
+   | $$__  $$| $$      | $$|_  $$| $$  | $$| $$__  $$  | $$     | $$   | $$  $$$| $$| $$  | $$
+   | $$  | $$| $$      | $$  \ $$| $$  | $$| $$  \ $$  | $$     | $$   | $$\  $ | $$| $$  | $$
+   | $$  | $$| $$$$$$$$|  $$$$$$/|  $$$$$$/| $$  | $$ /$$$$$$   | $$   | $$ \/  | $$|  $$$$$$/
+   |__/  |__/|________/ \______/  \______/ |__/  |__/|______/   |__/   |__/     |__/ \______/  */
+
+
+int tudoAUns(int *sol, int v);
+int tudoAZeros(int *sol, int v);
+
+// Gera um vizinho
+// Parametros: solucao actual, vizinho, numero de vertices
+//swap two vertices
+void gera_vizinho(int sol[], int nova_sol[], int vert, int * mat)
+{
+    int i, p1, p2;
+
+    for(i=0; i<vert; i++)
+        nova_sol[i]=sol[i];
+
+    if (flip()==1){ 
+        if (tudoAUns(sol, vert) == 0){
+            do
+                p1=random_l_h(0, vert-1);
+            while(nova_sol[p1] != 0);
+        }
+        nova_sol[p1] = 1;
+    }
+
+   
+        
+    //}
+
+	// Encontra posicao com valor 1
+    if (tudoAZeros(sol,vert) == 0){
+    do {
+        if (flip()==1){ 
+            if (tudoAZeros(sol,vert) == 0){
+                do{
+                    if (tudoAZeros(nova_sol,vert) == 1) break;
+                    p2=random_l_h(0, vert-1);
+                }while(nova_sol[p2] != 1);
+            }
+            nova_sol[p2] = 0;
+        }
+
+    }while(verifica_validade_l(nova_sol, mat, vert) == 0);
+	// Troca
+    }
+    
+    
+}
+
+int tudoAUns(int *sol, int v){
+    for(int i=0; i<v; i++)
+        if (sol[i]!=1) 
+            return 0; 
+    return 1;
+}
+
+int tudoAZeros(int *sol, int v){
+    for(int i=0; i<v; i++)
+        if (sol[i]!=0) 
+            return 0; 
+    return 1;
+}
+
+//int verifica_validade(int *sol, int *mat,struct info d);
+//local algorythm:
+int verifica_validade_l(int *sol, int *mat,int vert) {
+    int i = 0, j = 0;
+    for (i = 0; i < vert; i++)
+        if (sol[i] == 1) {
+            for (j = 0; j < vert; j++)
+                if (sol[j] == 1 && mat[i * vert + j] == 1) {
+                    return 0;
+                }
+        }
+    return 1;
+}
+
+int verifica_validade(int *sol, int *mat,struct info d) {
+    int i = 0, j = 0;
+    for (i = 0; i < d.numGenes; i++)
+        if (sol[i] == 1) {
+            for (j = 0; j < d.numGenes; j++)
+                if (sol[j] == 1 && mat[i * d.numGenes + j] == 1) {
+                    return 0;
+                }
+        }
+    return 1;
+}
+
+int trepa_colinas(int sol_t[], int *mat_t, int vert_t, int num_iter_t)
+{
+    int *nova_sol_t, custo_t=0, fit_viz_t, i_t;
+    int verifica_t=0;
+    //matriz para a nova solucao
+    nova_sol_t = malloc(sizeof(int)*vert_t);
+    if(nova_sol_t == NULL){ printf("Erro na alocacao de memoria"); exit(1);}
+    //------------------------------------------//
+
+    // Avalia solucao inicial
+    custo_t= calcula_fit(sol_t,mat_t,vert_t);
+    //-------------------------------------//
+
+    for(i_t=0; i_t<num_iter_t; i_t++)
+    {
+        do {
+            gera_vizinho(sol_t, nova_sol_t, vert_t, mat_t);
+            verifica_t = verifica_validade_l(nova_sol_t, mat_t, vert_t);
+            //verifica = 1; // PENALIZAÇAO
+        }while(verifica_t==0);
+        // Avalia vizinho
+        fit_viz_t= calcula_fit(nova_sol_t,mat_t,vert_t);
+
+        if(fit_viz_t > custo_t){ // PARA ACEITAR SOLUÇÕES DE CUSTO IGUAL OU NAO
+            substitui(sol_t, nova_sol_t, vert_t);
+            custo_t = fit_viz_t;
+        }
+    }
+    free(nova_sol_t);
+    return custo_t;
 }

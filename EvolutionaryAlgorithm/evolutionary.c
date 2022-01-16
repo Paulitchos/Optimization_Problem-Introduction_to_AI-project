@@ -564,6 +564,7 @@ void mutation(pchrom offspring, struct info d)
 			while (offspring[i].p[p1] != g1);
 
             offspring[i].p[p1] = g2;
+			if (offspring[i].p[p1] != 0) offspring[i].p[p1] = 1;
         }
 	}
 }
