@@ -5,7 +5,7 @@
 #include <time.h>
 #include <math.h>
 
-#define DEFAULT_RUNS	10
+#define DEFAULT_RUNS	100
 #define MAX_OBJ 1000
 
 int global = 0;
@@ -200,13 +200,13 @@ int main(int argc, char *argv[])
 			best_run = get_best(pop, EA_param, best_run);
 			gen_actual++;
 
-		//	write_best(*pop, EA_param);
+		// write_best(*pop, EA_param);
 		//	printf("validade:%d\n",pop->valido);
 
 			//global ++;
 			//if (global == 20) exit (0);
 			//for (int l=0; l<EA_param.popsize; l++) {
-			//	printsol(pop[l].p, EA_param.numGenes);
+			//	printsol(pop[l].p, EA_param.numGenes / 2);
 			//	putchar('\n');
 			//}
 			//printf("\n=========================\n");
@@ -264,9 +264,9 @@ void init_rand()
 int * read_file(char *filename, struct info * pEA_param )
 {
 	
-	pEA_param->popsize = 200; //fscanf(f, " pop: %d", &x.popsize);
-	pEA_param->pm = 0.01; //fscanf(f, " pm: %f", &x.pm);
-	pEA_param->pr = 0.7; //fscanf(f, " pr: %f", &x.pr);
+	pEA_param->popsize = 10; //fscanf(f, " pop: %d", &x.popsize);
+	pEA_param->pm = 0.1; //fscanf(f, " pm: %f", &x.pm);
+	pEA_param->pr = 0.3; //fscanf(f, " pr: %f", &x.pr);
 	pEA_param->tsize = 2; //fscanf(f, " tsize: %d", &x.tsize);
 	pEA_param->numGenerations = 1000;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
 	//x.capacity = 250;//fscanf(f, " cap: %d", &x.capacity);
@@ -326,53 +326,10 @@ int * read_file(char *filename, struct info * pEA_param )
     }
 
 	return p;
-	/* Leitura dos dados do KSP (peso e lucro)
-	for (i=0; i<x.numGenes; i++){
-		fscanf(f, " e %d %d", &mat[i][0], &mat[i][1]);
-		printf("======================x.numGenes = %d %d\n",mat[i][0], mat[i][1]);
-	}
-	fclose(f);
-	// Devolve a estrutura com os par�metros
-	return x; */
-
-	/*
-		struct  info x;
-	FILE    *f;
-	int     i;
-
-	f = fopen(filename, "rt");
-	if (!f)
-	{
-		printf("File not found\n");
-		exit(1);
-	}
-	// Leitura dos par�metros do problema
-	fscanf(f, " pop: %d", &x.popsize);
-	fscanf(f, " pm: %f", &x.pm);
-	fscanf(f, " pr: %f", &x.pr);
-	fscanf(f, " tsize: %d", &x.tsize);
-	fscanf(f, " max_gen: %d", &x.numGenerations);
-	fscanf(f, " obj: %d", &x.numGenes);
-	fscanf(f, " cap: %d", &x.capacity);
-	if (x.numGenes > MAX_OBJ)
-	{
-		printf("Number of itens is superior to MAX_OBJ\n");
-		exit(1);
-	}
-	x.ro = 0.0;
-	// Leitura dos dados do KSP (peso e lucro)
-	fscanf(f, " Weight Profit");
-	for (i=0; i<x.numGenes; i++)
-		fscanf(f, " %d %d", &mat[i][0], &mat[i][1]);
-	fclose(f);
-	// Devolve a estrutura com os par�metros
-	return x;
-	*/
 }
 
 // Simula o lan�amento de uma moeda, retornando o valor 0 ou 1
-int flip()
-{
+int flip(){
 	if ((((float)rand()) / (float)RAND_MAX) < 0.5)
 		return 0;
 	else
@@ -471,9 +428,9 @@ void write_best(chrom x, struct info d)
 	int i;
 
 	printf("Best individual: %4.1f\n", x.fitness);
-	for (i=0; i<d.numGenes; i++)
-		printf("%d", x.p[i]);
-	putchar('\n');
+	//for (i=0; i<d.numGenes; i++)
+	//	printf("%d", x.p[i]);
+	//putchar('\n');
 }
                                    
 
@@ -571,12 +528,44 @@ void crossover(pchrom parents, struct info d, pchrom offspring)
 // Par�metros de entrada: estrutura com os descendentes (offspring) e estrutura com par�metros (d)
 void mutation(pchrom offspring, struct info d)
 {
-	int i, j;
+	/*int i, j,num;
 
 	for (i=0; i<d.popsize; i++)
 		for (j=0; j<d.numGenes; j++)
 			if (rand_01() < d.pm)
-				offspring[i].p[j] = !(offspring[i].p[j]);
+				/*do{
+                    num = random_l_h(0,(d.numGenes-1));
+                }while(num == offspring[i].p[j]);*/
+				//offspring[i].p[j] = !(offspring[i].p[j]); 
+	
+	int i, j, g1, g2, p1, count;
+
+	for (i = 0; i < d.popsize; i++) {
+		if (rand_01() < d.pm) { // Mutar individuo
+			
+			do { // Garantir que o grupo escolhido tem pelo menos um elemento
+				count = 0; 
+				g1 = random_l_h(0, d.numGenes-1);
+
+				for (j = 0; j < d.numGenes; j++) {
+					if (offspring[i].p[j] == g1) {
+						count++;
+						break;
+					}
+				}
+			} while (count == 0);
+
+            do
+                g2 = random_l_h(0, d.numGenes-1);
+            while (g2 == g1);
+
+            do
+				p1 = random_l_h(0, d.numGenes-1);
+			while (offspring[i].p[p1] != g1);
+
+            offspring[i].p[p1] = g2;
+        }
+	}
 }
 
 
@@ -592,37 +581,6 @@ void mutation(pchrom offspring, struct info d)
 int solucaovalida(int *sol, int v, int * mat);
 int calcula_fit(int sol[], int *mat, int vert);
 int verifica_validade(int *sol, int *mat,struct info d);
-
-/* CERQUEIRA
-float eval_individual(int sol[], struct info d, int *mat, int *v){
-	int total=0;
-    int i ,verifica;
-    verifica=verifica_validade(sol, mat,d);
-    if(verifica==0) {
-        *v=0;
-        return 0;
-    }else{
-    	for(i=0;i<d.numGenes;i++){
-        	if(sol[i]==1)
-            	total++;
-    		}
-    	*v=1;
-    	return total;
-	}
-}
-
-int verifica_validade(int *sol, int *mat,struct info d) {
-    int i = 0, j = 0;
-    for (i = 0; i < d.numGenes; i++)
-        if (sol[i] == 1) {
-            for (j = 0; j < d.numGenes; j++)
-                if (sol[j] == 1 && mat[i * d.numGenes + j] == 1) {
-                    return 0;
-                }
-        }
-    return 1;
-}
-*/
 
 // Calcula a qualidade de uma solu��o
 // Par�metros de entrada: solu��o (sol), capacidade da mochila (d), matriz com dados do problema (mat) e numero de objectos (v)
@@ -647,37 +605,23 @@ float eval_individual(int sol[], struct info d, int *mat, int *v, float best_fit
 	int     i, min;
 	float   ro;
 
-		if (solucaovalida(sol, d.numGenes, mat) == 0) { // solução inválida
-			//*v = 0;
-			/*
-			for (i=0; sol[i] == 0 && i<d.numGenes; i++) // Procurar primeiro objeto na mochila
-				; 
-			min = i;
-			for (; i<d.numGenes; i++) // Procura objeto menos valioso na mochila
-				if(sol[i]==1 && mat[i][1] < mat[min][1])
-					min = i;
-			sol[min] = 0; // retirá-lo
-			*/
-			
-				//int x=0;
-				//int num_verts_sol = random_l_h(0, d.numGenes-1);
-				//for(int j=0; j<d.numGenes; j++){
-				//	do{
-				//		x = random_l_h(0, d.numGenes-1);
-				//	}while(sol[x] == 0);
-				//	sol[x]=1;
-				//}
+		if (solucaovalida(sol, d.numGenes, mat) == 0) { // solução inválida			
 				int fit = calcula_fit(sol,mat,d.numGenes);
 				int num_arestas_mal = num_arestas_sol(sol,d.numGenes,mat);
-				*v =1;
-				return fit - num_arestas_mal - 1;
+				*v =0;
+				if ( fit <= num_arestas_mal) {
+					fit = 0;
+					return fit;
+				}
+				return fit  - num_arestas_mal;
 			
 		} else {
 			*v = 1;
 		}
 
 	int fit = calcula_fit(sol,mat,d.numGenes);
-	if (*v == 0 ) fit = 0;
+	
+	//if (*v == 0 ) fit = 0;
 	// v é a validade da solução (0 - inválido, 1 - válido)
 	return fit;
 }

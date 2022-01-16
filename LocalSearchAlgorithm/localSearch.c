@@ -5,7 +5,7 @@
 #include <math.h>
 #include <time.h>
 
-#define DEFAULT_RUNS 30
+#define DEFAULT_RUNS 100
 #define PROB 0.01
 
 /*
@@ -27,6 +27,7 @@ Probabilidades do operador de recombinação / mutação - pm e pr
 void escreve_sol2(int *sol, int vert);
 // algoritmo
 int trepa_colinas(int sol[], int *mat, int vert, int num_iter);
+int trepa_colinas2vizinhanças(int sol[], int *mat, int vert, int num_iter);
 int esferiamento(int sol[], int *mat, int vert, int num_iter, int print);
 int flip();
 
@@ -92,9 +93,8 @@ int main(int argc, char *argv[]){
         gera_sol_inicial(sol, vert, mat, prints);
         if (prints) escreve_sol(sol, vert); // ***
         // Trepa colinas
-        //custo = trepa_colinas(sol, grafo, vert, num_iter);
         custo = trepa_colinas(sol, mat, vert, num_iter);
-        //custo = esferiamento(sol, mat, vert, num_iter, prints); //esfriamento // sol fica com a melhor soulução e retorna o custo dela
+        //custo = trepa_colinas2vizinhanças(sol, mat, vert, num_iter);
         // Escreve resultados da repeticao k
         printf("\nRepeticao %d:", k); // ***
         if (prints) escreve_sol(sol, vert); // ***
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]){
             substitui(best, sol, vert);
         }
     }
-    // Escreve eresultados globais
+    // Escreve resultados globais
     printf("\n==========RESULTADOS==========\n");
     printf("\nMelhor solucao encontrada\n");
     if (prints) escreve_sol(best, vert); // ***
@@ -382,54 +382,6 @@ void printsol(int * sol, int vert){
    mat - tabela com as ligações de todos os vertices
    */
 
-int esferiamento(int sol[], int *mat, int vert, int num_iter, int prints) { // trepa_colinas alterado
-
-    int *nova_sol, custo, custo_viz, i; 
-    float temp, erro, prob_aceitar, max = 100, min = 5; // Temperaturas inicial e final
-
-	nova_sol = malloc(sizeof(int)*vert);
-    if(nova_sol == NULL){ printf("Erro na alocacao de memoria"); exit(1); }
-	// Avalia solucao inicial
-    custo = calcula_fit(sol, mat, vert,custo); //fico a saber qual é o custo da minha solução atual
-    temp = max;
-    
-    while (temp > min) {
-        temp -= (max-min) / (float)num_iter; // Descer temperatura
-        // Gera vizinho
-        do {
-            gera_vizinho(sol, nova_sol, vert);
-        } while (solucaovalida(nova_sol, vert, mat, prints) == 0);
-		
-		// Avalia vizinho
-		custo_viz = calcula_fit(nova_sol, mat, vert,custo);
-        if(custo_viz<=custo) {
-            substitui(sol, nova_sol, vert); // sol fica = nova_sol
-            custo = custo_viz;
-        } else {
-            erro = custo_viz - custo; //tem que ser modulo
-            // Aceitar com determinada probabiçlidade - calcular probabilidade usando funcao exp()
-            /*  if erro > 0 then current <- $next 
-                else current <- next with probibility e^(erro/temp) */
-
-            erro = custo - custo_viz; 
-            prob_aceitar = exp(erro/temp); // mutação
-            if (prob_aceitar>rand_01()){
-                substitui(sol, nova_sol, vert); 
-                custo = custo_viz;
-            }
-            /*    
-            if (erro > 0) {
-                custo = custo_viz;
-            } else if ( rand_01() < exp(erro/temp) ) {
-                custo = custo_viz;
-            }
-            */
-        }
-    }
-    free(nova_sol);
-    return custo;
-}
-
 // Trepa colinas first-choice
 // Parametros: solucao, matriz de adjacencias, numero de vertices e numero de iteracoes
 // Devolve o custo da melhor solucao encontrada
@@ -469,7 +421,7 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
         // Avalia vizinho
         fit_viz= calcula_fit(nova_sol,mat,vert,custo);
 
-        if(fit_viz >= custo){ // PARA ACEITAR SOLUÇÕES DE CUSTO IGUAL OU NAO
+        if(fit_viz > custo){ // PARA ACEITAR SOLUÇÕES DE CUSTO IGUAL OU NAO
             substitui(sol, nova_sol, vert);
             custo = fit_viz;
         }
@@ -478,8 +430,8 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
     return custo;
 }
 
-/*
-int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
+
+int trepa_colinas2vizinhanças(int sol[], int *mat, int vert, int num_iter)
 {
     int *nova_sol, custo, fit_viz, i; 
     int *nova_sol2, fit_viz2;  // Vizinhança 2
@@ -505,7 +457,7 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
         do {
             gera_vizinho(sol, nova_sol, vert);
             verifica = verifica_validade(nova_sol, mat, vert);
-            verifica = 1; // PENALIZAÇAO
+            //verifica = 1; // PENALIZAÇAO
         }while(verifica==0);
 
         verifica = 0;
@@ -521,14 +473,13 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
         fit_viz2= calcula_fit(nova_sol,mat,vert,custo);
 
 
-        if (fit_viz >= custo) {
+        if (fit_viz > custo) {
             substitui(sol, nova_sol, vert);
             custo=fit_viz ;
         }
 
          // Vizinhança 2
-        if(fit_viz  >= fit_viz2) // mudado de < para <=
-        {
+        if(fit_viz  > fit_viz2){ // mudado de < para <=
             if (fit_viz  > custo){
                 substitui(sol, nova_sol, vert);
                 custo=fit_viz ;
@@ -545,7 +496,7 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
     free(nova_sol2);
     return custo;
 }
-*/
+
 
 /*  /$$$$$$$$ /$$   /$$ /$$   /$$  /$$$$$$   /$$$$$$   /$$$$$$ 
    | $$_____/| $$  | $$| $$$ | $$ /$$__  $$ /$$__  $$ /$$__  $$
