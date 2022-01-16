@@ -5,7 +5,7 @@
 #include <time.h>
 #include <math.h>
 
-#define DEFAULT_RUNS	100
+#define DEFAULT_RUNS	50
 #define MAX_OBJ 1000
 
 int global = 0;

@@ -8,4 +8,4 @@ localsearch:
 	gcc ./LocalSearchAlgorithm/*.c -o ./dist/localsearch -lm && ./dist/localsearch
 
 hybrid:
-	gcc ./HybridMethod/*.c -o ./dist/hybrid -lm && ./dist/hybrid
+	gcc ./HybridMethod/hybrid.c -o ./dist/hybrid -lm && ./dist/hybrid

@@ -88,6 +88,7 @@ void gera_vizinho(int sol[], int nova_sol[], int vert,int * mat);
 void escreve_sol2(int *sol, int vert);
 // algoritmo
 int trepa_colinas(int sol[], int *mat, int vert, int num_iter);
+int trepa_colinas2vizinhanças(int sol[], int *mat, int vert, int num_iter);
 int esferiamento(int sol[], int *mat, int vert, int num_iter, int print);
 
 // utils
@@ -451,11 +452,11 @@ void init_rand()
 int * read_file(char *filename, struct info * pEA_param )
 {
 	
-	pEA_param->popsize = 200; //fscanf(f, " pop: %d", &x.popsize);
+	pEA_param->popsize = 100; //fscanf(f, " pop: %d", &x.popsize);
 	pEA_param->pm = 0.01; //fscanf(f, " pm: %f", &x.pm);
 	pEA_param->pr = 0.7; //fscanf(f, " pr: %f", &x.pr);
 	pEA_param->tsize = 2; //fscanf(f, " tsize: %d", &x.tsize);
-	pEA_param->numGenerations = 700;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
+	pEA_param->numGenerations = 2500;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
 	//x.capacity = 250;//fscanf(f, " cap: %d", &x.capacity);
 	pEA_param->ro = 0.0;
 	if (pEA_param->numGenes > MAX_OBJ){printf("Number of itens is superior to MAX_OBJ\n");exit(1);}
@@ -1046,54 +1047,6 @@ int tudoAZeros(int *sol, int v){
    mat - tabela com as ligações de todos os vertices
    */
 
-int esferiamento(int sol[], int *mat, int vert, int num_iter, int prints) { // trepa_colinas alterado
-
-    int *nova_sol, custo, custo_viz, i; 
-    float temp, erro, prob_aceitar, max = 100, min = 5; // Temperaturas inicial e final
-
-	nova_sol = malloc(sizeof(int)*vert);
-    if(nova_sol == NULL){ printf("Erro na alocacao de memoria"); exit(1); }
-	// Avalia solucao inicial
-    custo = calcula_fit(sol, mat, vert); //fico a saber qual é o custo da minha solução atual
-    temp = max;
-    
-    while (temp > min) {
-        temp -= (max-min) / (float)num_iter; // Descer temperatura
-        // Gera vizinho
-        do {
-            gera_vizinho(sol, nova_sol, vert, mat);
-        } while (solucaovalida(nova_sol, vert, mat) == 0);
-		
-		// Avalia vizinho
-		custo_viz = calcula_fit(nova_sol, mat, vert);
-        if(custo_viz<=custo) {
-            substitui(sol, nova_sol, vert); // sol fica = nova_sol
-            custo = custo_viz;
-        } else {
-            erro = custo_viz - custo; //tem que ser modulo
-            // Aceitar com determinada probabiçlidade - calcular probabilidade usando funcao exp()
-            /*  if erro > 0 then current <- $next 
-                else current <- next with probibility e^(erro/temp) */
-
-            erro = custo - custo_viz; 
-            prob_aceitar = exp(erro/temp); // mutação
-            if (prob_aceitar>rand_01()){
-                substitui(sol, nova_sol, vert); 
-                custo = custo_viz;
-            }
-            /*    
-            if (erro > 0) {
-                custo = custo_viz;
-            } else if ( rand_01() < exp(erro/temp) ) {
-                custo = custo_viz;
-            }
-            */
-        }
-    }
-    free(nova_sol);
-    return custo;
-}
-
 // Trepa colinas first-choice
 // Parametros: solucao, matriz de adjacencias, numero de vertices e numero de iteracoes
 // Devolve o custo da melhor solucao encontrada
@@ -1148,7 +1101,7 @@ int trepa_colinas(int sol_t[], int *mat_t, int vert_t, int num_iter_t)
         // Avalia vizinho
         fit_viz_t= calcula_fit(nova_sol_t,mat_t,vert_t);
 
-        if(fit_viz_t >= custo_t){ // PARA ACEITAR SOLUÇÕES DE CUSTO IGUAL OU NAO
+        if(fit_viz_t > custo_t){ // PARA ACEITAR SOLUÇÕES DE CUSTO IGUAL OU NAO
             substitui(sol_t, nova_sol_t, vert_t);
             custo_t = fit_viz_t;
         }
@@ -1158,10 +1111,11 @@ int trepa_colinas(int sol_t[], int *mat_t, int vert_t, int num_iter_t)
 }
 
 /*
-int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
+int trepa_colinas2vizinhanças(int sol[], int *mat, int vert, int num_iter)
 {
-    int *nova_sol, custo, custo_viz, i; 
-    int *nova_sol2, custo_viz2;  // Vizinhança 2
+    int *nova_sol, custo, fit_viz, i; 
+    int *nova_sol2, fit_viz2;  // Vizinhança 2
+    int verifica = 0;
 
 	nova_sol = malloc(sizeof(int)*vert);
     nova_sol2 = malloc(sizeof(int)*vert); // Vizinhança 2
@@ -1170,41 +1124,50 @@ int trepa_colinas(int sol[], int *mat, int vert, int num_iter)
         printf("Erro na alocacao de memoria");
         exit(1);
     }
+    if(nova_sol2 == NULL)
+    {
+        printf("Erro na alocacao de memoria");
+        exit(1);
+    }
 	// Avalia solucao inicial
-    custo = calcula_fit(sol, mat, vert); //fico a saber qual é o custo da minha solução atual
+    custo = calcula_fit(sol, mat, vert,custo); //fico a saber qual é o custo da minha solução atual
     // continuar, aceitar a melhor entre sol, nova sol e nova sol 2
     for(i=0; i<num_iter; i++)
     {
-		// Gera vizinho
-		gera_vizinho(sol, nova_sol, vert);
-        gera_vizinho(sol, nova_sol2, vert);
-		// Avalia vizinho
-		custo_viz = calcula_fit(nova_sol, mat, vert);
-        //custo_viz2 = calcula_fit(nova_sol2, mat, vert); // Vizinhança 2
-		// Aceita vizinho se o custo diminuir (problema de minimizacao)
-        // se o custo for menor, ent, aceito, substituo a solução atual pela nova
+        do {
+            gera_vizinho(sol, nova_sol, vert);
+            verifica = verifica_validade(nova_sol, mat, vert);
+            //verifica = 1; // PENALIZAÇAO
+        }while(verifica==0);
 
-        if (custo_viz <= custo) {
+        verifica = 0;
+
+        do {
+            gera_vizinho(sol, nova_sol2, vert);
+            verifica = verifica_validade(nova_sol2, mat, vert);
+            verifica = 1; // PENALIZAÇAO
+        }while(verifica==0);
+
+        // Avalia vizinho
+        fit_viz= calcula_fit(nova_sol,mat,vert,custo);
+        fit_viz2= calcula_fit(nova_sol,mat,vert,custo);
+
+
+        if (fit_viz > custo) {
             substitui(sol, nova_sol, vert);
-            custo=custo_viz;
-        } else { //solução pior tmb pode ser aceite
-            if (rand_01() < PROB) { //isto ajuda a fugir de máximos locais
-                substitui(sol, nova_sol, vert);
-                custo=custo_viz;
-            }
+            custo=fit_viz ;
         }
 
-        /* // Vizinhança 2
-        if(custo_viz <= custo_viz2) // mudado de < para <=
-        {
-            if (custo_viz < custo){
+         // Vizinhança 2
+        if(fit_viz  > fit_viz2){ // mudado de < para <=
+            if (fit_viz  > custo){
                 substitui(sol, nova_sol, vert);
-                custo=custo_viz;
+                custo=fit_viz ;
             }
         } else { // viz 2 é melhor
-            if (custo_viz2 < custo){
+            if (fit_viz2 > custo){
                 substitui(sol, nova_sol2, vert);
-                custo=custo_viz2;
+                custo=fit_viz2;
             }
         }
         
