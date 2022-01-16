@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
                 // Avalia vizinho
                 fit_viz_t= calcula_fit(nova_sol_t,mat,vert);
 
-                if(fit_viz_t >= custo_t){ // PARA ACEITAR SOLUÇÕES DE CUSTO IGUAL OU NAO
+                if(fit_viz_t > custo_t){ // PARA ACEITAR SOLUÇÕES DE CUSTO IGUAL OU NAO
                     substitui(sol, nova_sol_t, vert);
                     custo_t = fit_viz_t;
                 }
@@ -394,11 +394,11 @@ void init_rand()
 int * read_file(char *filename, struct info * pEA_param )
 {
 	
-	pEA_param->popsize = 100; //fscanf(f, " pop: %d", &x.popsize);
-	pEA_param->pm = 0.01; //fscanf(f, " pm: %f", &x.pm);
-	pEA_param->pr = 0.7; //fscanf(f, " pr: %f", &x.pr);
+	pEA_param->popsize = 10; //fscanf(f, " pop: %d", &x.popsize);
+	pEA_param->pm = 0.1; //fscanf(f, " pm: %f", &x.pm);
+	pEA_param->pr = 0.3; //fscanf(f, " pr: %f", &x.pr);
 	pEA_param->tsize = 2; //fscanf(f, " tsize: %d", &x.tsize);
-	pEA_param->numGenerations = 2500;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
+	pEA_param->numGenerations = 1000;//fscanf(f, " max_gen: %d", &x.numGenerations); //max_gen
 	//x.capacity = 250;//fscanf(f, " cap: %d", &x.capacity);
 	pEA_param->ro = 0.0;
 	if (pEA_param->numGenes > MAX_OBJ){printf("Number of itens is superior to MAX_OBJ\n");exit(1);}
